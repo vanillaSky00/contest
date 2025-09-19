@@ -1,7 +1,7 @@
 ## Overall
 This repository is my collection of learning notes from NCKU CSIE Data Structures.
-pB is Prefix-Sum + Harmonic Trick for Floor Division Problems
-pD is Linked List Maintenance Using Arrays
+<br> pB : Prefix-Sum + Harmonic Trick for Floor Division Problems
+<br> pD : Linked List Maintenance Using Arrays
 
 
 ## Prefix-Sum + Harmonic Trick for Floor Division Problems
@@ -58,9 +58,9 @@ R[i] = id of the node right of i
 val[i] = value stored at node i
 ```
 
-Make neighbors in order of : a <-> b 
+Make neighbors in order of : `a <-> b` 
 ```
-static inline void link(int a, int b) { R[a] = b; L[b] = a;}
+static inline void link(int a, int b) { R[a] = b; L[b] = a; }
 ```
 
 Operation
