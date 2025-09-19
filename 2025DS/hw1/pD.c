@@ -9,6 +9,7 @@ static inline void link(int a, int b) { R[a] = b; L[b] = a;} // a <-> b
 int main(void){
     int n, t;
     if (scanf("%d %d", &n, &t) != 2) return 0;
+    int numOfElement = n;
 
 // sentinel: HEAD <-> node2 <-> node3 <-> ... <-> nodeN+1 <-> TAIL
     L[HEAD] = -1; L[TAIL] = HEAD;
@@ -29,6 +30,7 @@ int main(void){
         int k, x;
 
         if (op[0] == 'H' && op[1] == '\0') {
+            numOfElement++;
             scanf("%d", &x);         
             int id = next_id++;
             val[id] = x;
@@ -36,6 +38,7 @@ int main(void){
             link(HEAD, id);
         }
         else if (op[0] == 'T' && op[1] == '\0') {
+            numOfElement++;
             scanf("%d", &x);             
             int id = next_id++;
             val[id] = x;
@@ -43,33 +46,44 @@ int main(void){
             link(id, TAIL);
         } 
         else if (op[0] == 'A') {
-            scanf("%d %d", &k, &x); k++;
+            numOfElement++;
+            scanf("%d %d", &k, &x); k++;// real node start 2
             int id = next_id++;
             val[id] = x;
             link(id, R[k]);
             link(k, id);
         }
         else if (op[0] == 'B') {
-            scanf("%d %d", &k, &x); k++;
+            numOfElement++;
+            scanf("%d %d", &k, &x); k++;// real node start 2
             int id = next_id++;
             val[id] = x;
             link(L[k], id);
             link(id, k);
         }
         else if (op[0] == 'D') {
-            scanf("%d", &k);   
-            link(L[k+1], R[k+1]);// because real node start 2
+            numOfElement--;
+            scanf("%d", &k); k++;// real node start 2   
+            link(L[k], R[k]);
         }
         else if (op[0] == 'M' && op[1] == 'H') {
-            scanf("%d", &k);
-
+            scanf("%d", &k); k++;// real node start 2   
+            link(L[k], R[k]);
+            link(k, R[HEAD]);
+            link(HEAD, k);
         }
         else if (op[0] == 'M' && op[1] == 'T') {
-            scanf("%d", &k);
-
+            scanf("%d", &k); k++;// real node start 2   
+            link(L[k], R[k]);
+            link(L[TAIL], k);
+            link(k, TAIL);
         }
     }
 
+    if (numOfElement == 0) {
+        printf("EMPTY\nEMPTY\n");
+        return 0;
+    }
 
     // print head -> tail
     for (int i = R[HEAD]; i != TAIL; i = R[i]) {
