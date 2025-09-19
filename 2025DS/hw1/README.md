@@ -15,11 +15,11 @@ A loop like for t=K..max(a)
 
 Naïve `O(N·M)` is too slow. (1 <= N, M <= 1e6)
 
-![formula1](https://latex.codecogs.com/svg.latex?\max_{t\geq%20K}\;\sum_{i=1}^{N}\left\lfloor\frac{a_i}{t}\right\rfloor\cdot%20t)
+### $ \max_{t \geq K} ; \sum_{i=1}^{N} \left\lfloor \frac{a_i}{t} \right\rfloor \cdot t$
 
-$N = number of squads$ <br>
-$a_i = size of squad i$ <br>
-$t = chosen team size (𝑡≥𝐾)$ <br>
+$N = number\ of\ squads$ <br>
+$a_i = size\ of squad\  i$ <br>
+$t = chosen\ team\ size\ (𝑡≥𝐾)$ <br>
 
 
 ```
@@ -42,11 +42,11 @@ for (int t = K; t <= maxNum; t++) {
 ```
 Time Complexity : `MlogM`
 
-![formula2](https://latex.codecogs.com/svg.latex?\sum_{t=K}^{M}\frac{M}{t}\;=\;M\cdot%20H_M\;\approx\;M\log%20M)
 
+### $ \sum_{t=K}^{M} \frac{M}{t} = M \cdot H_M \approx M \log M$
 
 $M = max(a_i​)$ <br>
-$H_M = the 𝑀-th harmonic number$ <br>
+$H_M = the\ 𝑀-th\ harmonic\ number$ <br>
 
 
 
