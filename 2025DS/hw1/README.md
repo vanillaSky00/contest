@@ -1,10 +1,10 @@
-```
+## Overall
 This repository is my collection of learning notes from NCKU CSIE Data Structures.
 pB is Prefix-Sum + Harmonic Trick for Floor Division Problems
 pD is Linked List Maintenance Using Arrays
-```
 
-### Prefix-Sum + Harmonic Trick for Floor Division Problems
+
+## Prefix-Sum + Harmonic Trick for Floor Division Problems
 These are hints you can bucket values by ranges and use prefix sums to reduce complexity.
 ```
 floor(a / t)
@@ -49,7 +49,7 @@ H_M = the 𝑀-th harmonic number
 $$
 
 
-### Linked List Maintenance Using Arrays
+## Linked List Maintenance Using Arrays
 Use arrays to maintain neighbors in linked list
 ```
 L[i] = id of the node left of i
@@ -77,7 +77,3 @@ make a and b neighbors.
 Time Complexity : `O(1)`
 
 Other resources: Luogu P1996 (static linked list)
-
-### Is static array
-Safe: no dynamic allocation bugs.
-Fast: predictable O(1).
