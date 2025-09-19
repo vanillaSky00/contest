@@ -44,3 +44,61 @@ Makefile
 
 # Backup files
 *~
+
+
+# Build and binary files
+*.exe
+*.out
+*.o
+*.obj
+*.class
+
+# Ignore executables with no extension (Linux/macOS builds)
+2025DS/hw1/p*
+!2025DS/hw1/*.c   # keep the source files
+
+# Debug / IDE artifacts
+*.log
+*.swp
+*.swo
+*.DS_Store
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# IntelliJ / Eclipse / NetBeans
+.idea/
+*.iml
+*.ipr
+*.iws
+.classpath
+.project
+.settings/
+
+# Java build outputs
+/bin/
+/target/
+/build/
+
+# CMake
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+
+# Gradle / Maven
+.gradle/
+*.jar
+*.war
+*.ear
+*.db
+
+# Backup files
+*~
+
+# macOS debug symbols (Xcode/clang)
+*.dSYM/
+
+# Temp files (VSCode runner etc.)
+*tempCodeRunnerFile.c
