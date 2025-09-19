@@ -15,14 +15,13 @@ A loop like for t=K..max(a)
 
 Naïve `O(N·M)` is too slow. (1 <= N, M <= 1e6)
 
-
-$`
+$$
 \max_{t \geq K} \; \sum_{i=1}^{N} \left\lfloor \frac{a_i}{t} \right\rfloor \cdot t
 
 N = number of squads
 a_i = size of squad i
 t = chosen team size (𝑡≥𝐾)
-`$
+$$
 
 ```
 freq[x] = how many squads of size x
@@ -44,12 +43,12 @@ for (int t = K; t <= maxNum; t++) {
 ```
 Time Complexity : `MlogM`
 
-$`
+$$
 \sum_{t=K}^{M} \frac{M}{t} \;=\; M \cdot H_M \;\approx\; M \log M
 
 M = max(a_i​)
 H_M = the 𝑀-th harmonic number
-`$
+$$
 
 
 ## Linked List Maintenance Using Arrays
