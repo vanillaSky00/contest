@@ -45,6 +45,5 @@ Makefile
 # if no extention binary file
 *.[!a-zA-Z0-9]*
 
-
 # Backup files
 *~
