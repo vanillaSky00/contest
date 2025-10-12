@@ -70,12 +70,13 @@ static void insert(maxHeap* hp, int val) {
 
     hp->data[hp->size] = val; 
     hp->size++;
-    heapifyUp(hp, hp->size - 1);// be careful of the hp size and the idx to heapify in insert and extract
+    heapifyUp(hp, hp->size - 1);
+    // be careful of the hp size and the idx to heapify in insert and extract
 }
 
 static void update(maxHeap* hp, int idx, int val) {
     if (hp == NULL || idx < 0 || idx >= hp->size) return;
-    
+
     int old_val = hp->data[idx];
     hp->data[idx] = val;
     if (val > old_val) heapifyUp(hp, idx);

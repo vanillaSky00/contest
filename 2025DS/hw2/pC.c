@@ -1,14 +1,20 @@
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
+#include <stdbool.h>
+
 #define MAXLEN 10005
 #define MAXTOK 10005
+
 typedef struct Token {
     int type;   // 1 = number, 2 = operator, 3 = parentheses
     char ch;    // operator or parentheses
     int num;    // number
 } Token;
+
 Token input[MAXTOK];
 int input_len = 0;
+
 void init() {
     for (int i = 0; i < MAXTOK; i++) {
         input[i].type = 0;
@@ -16,10 +22,12 @@ void init() {
         input[i].num = 0;
     }
 }
+
 void getInput() {
     char line[MAXLEN];
     fgets(line, sizeof(line), stdin);
     int len = strlen(line);
+
     for (int i = 0; i < len; i++) {
         char c = line[i];
         if (c == ' ')
@@ -39,6 +47,7 @@ void getInput() {
     }
     ++input_len;
 }
+
 void test() {
     printf("input length = %d\n", input_len);
     for (int i = 0; i < input_len; i++) {
@@ -50,17 +59,111 @@ void test() {
             printf("%c\n", input[i].ch);
     }
 }
+
+
+Token answer[MAXTOK];
+int answer_len = 0;
+
+static inline bool isOperator(char c) { 
+    return c=='+'||c=='-'||c=='*'||c=='/'; 
+}
+ 
+static inline int precedency(char c) { 
+    return (c == '+' || c == '-' ) ? 1 : (c == '*' || c == '/' ) ? 2 : -1; 
+}
+
+static inline long long apply(long long a, long long b, char op){
+    if(op == '+') return a + b;
+    if(op == '-') return a - b;
+    if(op == '*') return a * b;
+    // assume integer division like C (b != 0 assumed for this task)
+    return a / b;
+}
+
+void infixToPrefix() {
+    int n = input_len;
+    Token stack[n];
+    int top = -1;
+    int ansIdx = 0;
+
+    // scan from right to left
+    // number -> parenthesis -> operator
+    for (int i = n - 1; i >= 0; i--) {
+        Token token = input[i];
+
+        if (token.type == 1) answer[ansIdx++] = token;
+        else if (token.type == 3 && token.ch == ')') { 
+            stack[++top] = token;
+        }
+        else if (token.type == 3 && token.ch == '(') {
+            while (top != -1 && stack[top].ch != ')') {
+                answer[ansIdx++] = stack[top--];
+            }
+            if (top != -1) top--; // pop ')'
+        }
+        else if (token.type == 2) {
+            while (top != -1 && stack[top].type == 2 && 
+                    precedency(stack[top].ch) > precedency(token.ch)) {
+                answer[ansIdx++] = stack[top--];
+            }
+            stack[++top] = token;
+        }
+    }
+
+    // pop the remaining ops
+    while (top != -1) answer[ansIdx++] = stack[top--];
+
+    // reverse
+    for (int i = 0; i < ansIdx / 2; i++) {
+        Token tmp = answer[i];
+        answer[i] = answer[ansIdx - i - 1];
+        answer[ansIdx - i - 1] = tmp;
+    }
+
+    answer_len = ansIdx;
+}
+
 void printResult(int res) {
     printf("%d\n", res);
-    // TODO: print preorder
+    
+    // print preorder
+    for (int i = 0; i < answer_len; i++) {
+        Token t = answer[i];
+        if (t.type == 1) {
+            printf("%d ", t.num);
+        }
+        else {
+            printf("%c ", t.ch);
+        }
+    }
     printf("\n");
 }
+
+int evalPrefix() {
+    long long stack[MAXTOK];
+    int top = -1;
+    int n = answer_len;
+    for (int i = n - 1; i >= 0; i--) {
+        if (answer[i].type == 1) {
+            stack[++top] = answer[i].num;
+        }
+        else if (answer[i].type == 2) {
+            long long x = stack[top--];
+            long long y = stack[top--];
+            stack[++top] = apply(x, y, answer[i].ch);
+        }
+    }
+    return stack[0];
+}
+
 int main() {
     init();
     getInput();
-    test(); // TODO: for testing, remember to delete it before submitting
-    int res = 0;
-    // TODO: calculate result and transform the expression
+    //test(); 
+
+    infixToPrefix();
+    int res = evalPrefix();
+
     printResult(res);
     return 0;
 }
