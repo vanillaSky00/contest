@@ -20,6 +20,11 @@ Space complexity:
 
 
 ### 2 DP
+
+$
+f(last_visited)
+$
+
 Time complexity:
 Space complexity:
 
