@@ -5,7 +5,7 @@ $O(V+E)$ for time and space complexity <br>
 We can use topological sort to detect with
 https://en.wikipedia.org/wiki/Topological_sorting
 
-## Kahn's algorithm
+## Kahn's algorithm (BFS)
 Need a queue and start with node with `inDegree = 0`
 
 ## DFS approach
