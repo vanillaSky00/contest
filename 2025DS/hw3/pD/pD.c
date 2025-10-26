@@ -61,12 +61,73 @@ void generate_mst(Node *start) {
 };
 
 
+static inline int compare_edge(Edge* e1, Edge* e2) {
+    if (e1->w > e2->w) return 1; // might stackoverflow if we return w1 - w2
+    else if (e1->w < e2->w) return -1;
+    else return 0;
+}
+
+static inline void swap_edges(Edge** x, Edge** y) {
+    Edge* tmp = *x; 
+    *y = tmp;
+    *x = tmp;
+}
+
+static void heapify_up(PriorityQueue* pq, int idx) {
+    if (pq == NULL || idx < 0 || idx >= pq->size) return;
+
+    while (idx > 0) {
+        int parent = (idx - 1) / 2;
+        if (compare_edge(pq->Edges[idx], pq->Edges[parent]) < 0) {
+            swap_edges(&pq->Edges[idx], &pq->Edges[parent]);
+            idx = idx / 2;
+        }
+        else break;
+    }
+}
+
+static void heapify_down(PriorityQueue* pq, int idx) {
+    if (pq == NULL || idx < 0 || idx >= pq->size) return;
+
+    while (true) {
+        int least = idx;
+        int left = idx * 2 + 1; 
+        int right = idx * 2 + 2;
+
+        if (left < pq->size && compare_edge(pq->Edges[left], pq->Edges[least]) < 0) least = left;
+        if (right < pq->size && compare_edge(pq->Edges[right], pq->Edges[least]) < 0) least = right;
+        
+        if (least == idx) break;
+        swap_edges(&pq->Edges[least], &pq->Edges[idx]);
+        idx = least;
+    }
+}
+
 static void offer(PriorityQueue* pq, Edge* e) {
+    if (pq == NULL || e == NULL) return;
+
+    if (pq->size == pq->capacity) {
+        int newcap = pq->capacity ? pq->capacity * 2 : 16;
+        pq->Edges = realloc(pq->Edges, sizeof(Edge*) * newcap);
+        pq->capacity = newcap;
+    }
+
+    pq->Edges[pq->size] = e;
     pq->size++;
+    heapify_up(pq, pq->size - 1);
 }
 
 static Edge* poll(PriorityQueue* pq) {
+    if (pq == NULL || pq->size <= 0) return NULL;
+    Edge* min = pq->Edges[0];
     pq->size--;
+
+    if (pq->size > 0) {
+        pq->Edges[0] = pq->Edges[pq->size];
+        heapify_down(pq, 0);
+    }
+
+    return min;
 }
 
 static inline unsigned hash_int(int x) { 
