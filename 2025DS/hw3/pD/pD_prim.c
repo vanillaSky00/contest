@@ -1,7 +1,11 @@
 #include "mst.h"
 #include <stdlib.h>
 #include <stdbool.h>
+#include <string.h>
 #include <stdio.h>
+
+#define HASH_EMPTY 0
+#define HASH_OCCUPIED 1
 
 #define DEBUG_LOG(msg,...)
 //#define DEBUG_LOG(msg,...) printf("Debug: " msg "\n" , ##__VA_ARGS__)
@@ -12,9 +16,22 @@ typedef struct PriorityQueue {
     int capacity;
 } PriorityQueue;
 
+typedef struct HashSet {
+    int* keys;
+    char* used;
+    int capacity;
+    int size;
+} HashSet;
+
 static void offer(PriorityQueue* pq, Edge* e);
 static Edge* poll(PriorityQueue* pq);
 static inline bool pq_empty(const PriorityQueue* pq) { return pq->size == 0; }
+
+static HashSet* hs_create(int cap_hint);
+static void hs_add(HashSet* h, int key);
+static bool containsKey(HashSet* h, int key);
+
+static int bfs(Node *start); // find number of nodes first
 
 // be careful that edge is undirected so u or v should be considered
 static inline Node* other(const Edge* e, const Node* from) {
@@ -23,6 +40,7 @@ static inline Node* other(const Edge* e, const Node* from) {
     return NULL; // will not happend
 }
 
+
 // use prim algorithm since we do not know all the edges
 void generate_mst(Node *start) {
     PriorityQueue* pq = (PriorityQueue*) malloc(sizeof(PriorityQueue));
@@ -30,27 +48,28 @@ void generate_mst(Node *start) {
     pq->Edges = (Edge**) malloc(sizeof(Edge*) * pq->capacity);
     pq->size = 0;
 
-    bool* seen = (bool*) calloc(MAX_NODES, sizeof(bool));
-    
-    seen[start->id] = true;
-    int node_size = 1;
+    HashSet* seen = hs_create(MAX_NODES);
 
+    hs_add(seen, start->id);
     for (int i = 0; i < start->edge_count; i++) {
         Edge* e = start->edges[i];
-        Node* nb = other(e, start);
-        if (nb && !seen[nb->id]) offer(pq, e);
+        if (!containsKey(seen, other(e, start)->id)) { 
+            offer(pq, e);
+        }
+
     }
     
+    int node_size = bfs(start);
     DEBUG_LOG("node_size = %d", node_size);
 
-    while (node_size < MAX_NODES && !pq_empty(pq)) {
+    while (seen->size < node_size && !pq_empty(pq)) {
         DEBUG_LOG("in pq");
         Edge* edge = poll(pq);
         if (edge == NULL) continue;
 
         // Determine which side is the new vertex across the cut
-        bool u_seen = seen[edge->u->id];
-        bool v_seen = seen[edge->v->id];
+        bool u_seen = containsKey(seen, edge->u->id);
+        bool v_seen = containsKey(seen, edge->v->id);
         
         Node* to = NULL;
         if (u_seen && !v_seen) to = edge->v;
@@ -58,19 +77,20 @@ void generate_mst(Node *start) {
         else continue;
 
         edge->keep = 1;
-        node_size++;
-        seen[to->id] = true;
+        hs_add(seen, to->id);
 
         for (int i = 0; i < to->edge_count; i++) {
-            Edge* e2 = to->edges[i];
-            Node* nb2 = other(e2, to);
-            if (nb2 && !seen[nb2->id]) offer(pq, e2);
-            // Do not insert into seen when pushing candidates—only when an edge is accepted.
+            if (!containsKey(seen, other(to->edges[i], to)->id)) {
+                offer(pq, to->edges[i]);
+                // Do not insert into seen when pushing candidates—only when an edge is accepted.
+            }
         }
     }
 
     free(pq->Edges);
     free(pq);
+    free(seen->keys);
+    free(seen->used);
     free(seen);
 };
 
@@ -141,4 +161,83 @@ static Edge* poll(PriorityQueue* pq) {
     }
 
     return min;
+}
+
+static inline unsigned hash_int(int x) { 
+    unsigned h = (unsigned)x * 2654435761u; 
+    h ^= h >> 16;
+    return h;
+}
+
+static HashSet* hs_create(int cap_hint) {
+    HashSet* h = (HashSet*) malloc(sizeof(HashSet));
+    h->capacity = 1;
+    while (h->capacity < cap_hint * 2) h->capacity <<= 1;// round up to power of two
+
+    h->size = 0;
+    h->keys = (int*) calloc(h->capacity, sizeof(int));
+    h->used = (char*) calloc(h->capacity, sizeof(char));
+    return h;
+}
+
+static inline unsigned linear_probing(HashSet* h, int key) {
+    int i = hash_int(key) & (unsigned)(h->capacity - 1); // capacity must be a power of two
+
+    while (h->used[i]) {
+        if (h->keys[i] == key) return i;
+        i = (i + 1u) & (unsigned)(h->capacity - 1);
+    }
+    return i;
+}
+
+static void hs_add(HashSet* h, int key) {
+    if (h == NULL) return;
+
+    if ((float)h->size / h->capacity > 0.7f) {
+        // Optional: implement rehash if needed; skip for 100k static use
+    }
+
+    unsigned idx = linear_probing(h, key);
+    if (h->used[idx]) return;
+
+    h->used[idx] = HASH_OCCUPIED;
+    h->keys[idx] = key;
+    h->size++;
+}
+
+static bool containsKey(HashSet* h, int key) {
+    if (h == NULL) return false;
+
+    unsigned idx = linear_probing(h, key);
+    return h->used[idx] && (h->keys[idx] == key);
+}
+
+static int bfs(Node* start) {
+    if (!start) return 0;
+
+    HashSet* seen = hs_create(MAX_NODES);
+    Node** q = (Node**) malloc(sizeof(Node*) * MAX_NODES);
+    int front = 0, rear = 0;
+    int node_size = 0;
+
+    hs_add(seen, start->id);
+    q[rear++] = start;
+    node_size++;
+
+    while (rear > front) {
+        Node* at = q[front++];
+        
+        for (int i = 0; i < at->edge_count; i++) {
+            Node* o = other(at->edges[i], at);
+            if (!containsKey(seen, o->id)) {
+                hs_add(seen, o->id);  
+                q[rear++] = o;
+                node_size++;
+            }
+        }
+    }
+
+    free(seen);
+    free(q);
+    return node_size;
 }
