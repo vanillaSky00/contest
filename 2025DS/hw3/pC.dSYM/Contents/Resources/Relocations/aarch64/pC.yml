@@ -1,8 +1,0 @@
----
-triple:          'arm64-apple-darwin'
-binary-path:     '/Users/harris/Documents/CS/114/Data Structure/contest/2025DS/hw3/pC'
-relocations:
-  - { offsetInCU: 0x26, offset: 0x26, size: 0x8, addend: 0x0, symName: _main, symObjAddr: 0x0, symBinAddr: 0x100003778, symSize: 0x1B0 }
-  - { offsetInCU: 0x63, offset: 0x63, size: 0x8, addend: 0x0, symName: _main, symObjAddr: 0x0, symBinAddr: 0x100003778, symSize: 0x1B0 }
-  - { offsetInCU: 0x125, offset: 0x125, size: 0x8, addend: 0x0, symName: _solve, symObjAddr: 0x1B0, symBinAddr: 0x100003928, symSize: 0x604 }
-...

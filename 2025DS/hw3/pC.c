@@ -1,14 +1,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#define DEBUG_LOG(msg,...)
+//#define DEBUG_LOG(msg,...) printf("Debug: " msg "\n" , ##__VA_ARGS__)
 
 // use bidirectionalBFS can further optimize
 static int solve(char** maze, int n, int m) {
-    
-    // find B for starting and E for ending
-    // make the teleport hole mapping
-    int start = 1, end = -1;
-    int holes[26][2]; //  magic hole appears at most 2 times
+    int start = -1, end = -1;
+    int holes[26][2]; 
     for (int i = 0; i < 26; i++) holes[i][0] = holes[i][1] = -1;
 
     for (int r = 0; r < n; r++) {
@@ -25,25 +24,24 @@ static int solve(char** maze, int n, int m) {
 
     if (start == -1 || end == -1) return -1;
 
-
     int* q = (int*) malloc(sizeof(int) * (n * m));
     bool* seen = (bool*) calloc(n * m, sizeof(bool));
     int front = 0, rear = 0;
     q[rear++] = start;
     seen[start] = true;
 
-    printf("start:%d, end:%d\n", start, end);
+    DEBUG_LOG("start:%d, end:%d\n", start, end);
     int dis = 0;
     int directions[5] = {0, -1, 0, 1, 0}; 
     
     while (rear > front) {
         int size = rear - front;
-        printf("layer\n");
+        DEBUG_LOG("layer\n");
         while (size-- > 0) {
             int at = q[front++];
             int ar = at / m;
             int ac = at % m;
-            printf("(%d,%d)\n", ar, ac);
+            DEBUG_LOG("(%d,%d)\n", ar, ac);
             if (at == end) {
                 free(q);
                 free(seen);
@@ -64,7 +62,7 @@ static int solve(char** maze, int n, int m) {
             }
 
             // magic holes as a neighbor also
-            int ch = maze[ar][ac];
+            char ch = maze[ar][ac];
             if (ch >= 'A' && ch <= 'Z') {
                 for (int i = 0; i < 2; i++) {
                     int hole = holes[ch - 'A'][i];
@@ -101,6 +99,6 @@ int main() {
     for (int i = 0; i < n; i++) free(maze[i]);
     free(maze);
 
-    printf("\nmin cost: %d\n", res);
-    return res;
+    printf("%d\n", res);
+    return 0;
 }
