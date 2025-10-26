@@ -18,7 +18,7 @@ typedef struct PriorityQueue {
 
 typedef struct HashSet {
     int* keys;
-    char *used;
+    char* used;
     int capacity;
     int size;
 } HashSet;
@@ -31,6 +31,7 @@ static HashSet* hs_create(int cap_hint);
 static void hs_add(HashSet* h, int key);
 static bool containsKey(HashSet* h, int key);
 
+static int bfs(Node *start); // find number of nodes first
 
 // be careful that edge is undirected so u or v should be considered
 static inline Node* other(const Edge* e, const Node* from) {
@@ -47,7 +48,7 @@ void generate_mst(Node *start) {
     pq->Edges = (Edge**) malloc(sizeof(Edge*) * pq->capacity);
     pq->size = 0;
 
-    HashSet* seen = hs_create(100000);
+    HashSet* seen = hs_create(MAX_NODES);
 
     hs_add(seen, start->id);
     for (int i = 0; i < start->edge_count; i++) {
@@ -58,7 +59,10 @@ void generate_mst(Node *start) {
 
     }
     
-    while (seen->size < MAX_NODES && !pq_empty(pq)) {
+    int node_size = bfs(start);
+    DEBUG_LOG("node_size = %d", node_size);
+
+    while (seen->size < node_size && !pq_empty(pq)) {
         DEBUG_LOG("in pq");
         Edge* edge = poll(pq);
         if (edge == NULL) continue;
@@ -171,8 +175,8 @@ static HashSet* hs_create(int cap_hint) {
     while (h->capacity < cap_hint * 2) h->capacity <<= 1;// round up to power of two
 
     h->size = 0;
-    h->keys = calloc(h->capacity, sizeof(int));
-    h->used = calloc(h->capacity, sizeof(char));
+    h->keys = (int*) calloc(h->capacity, sizeof(int));
+    h->used = (char*) calloc(h->capacity, sizeof(char));
     return h;
 }
 
@@ -206,4 +210,34 @@ static bool containsKey(HashSet* h, int key) {
 
     unsigned idx = linear_probing(h, key);
     return h->used[idx] && (h->keys[idx] == key);
+}
+
+static int bfs(Node* start) {
+    if (!start) return 0;
+
+    HashSet* seen = hs_create(MAX_NODES);
+    Node** q = (Node**) malloc(sizeof(Node*) * MAX_NODES);
+    int front = 0, rear = 0;
+    int node_size = 0;
+
+    hs_add(seen, start->id);
+    q[rear++] = start;
+    node_size++;
+
+    while (rear > front) {
+        Node* at = q[front++];
+        
+        for (int i = 0; i < at->edge_count; i++) {
+            Node* o = other(at->edges[i], at);
+            if (!containsKey(seen, o->id)) {
+                hs_add(seen, o->id);  
+                q[rear++] = o;
+                node_size++;
+            }
+        }
+    }
+
+    free(seen);
+    free(q);
+    return node_size;
 }
