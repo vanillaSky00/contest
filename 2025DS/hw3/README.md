@@ -71,7 +71,7 @@ In brief, Prim is better when a graph is dynamic, growing from one node.
 <br>
 
 Note for Prims:
-- Disconnected graphs: The loop over all start builds an MSF (minimum spanning forest). If you need a single MST, ensure the graph is connected.
+- Disconnected graphs: The loop over all start builds an MSF (minimum spanning forest), do it by each groups. If you need a single MST, ensure the graph is connected.
 - Dense graphs: Replace the heap with an array of bestWeight[v] + linear scan (`O(V^2)`)—often faster in practice for dense inputs.
 - Fancy heaps: Fibonacci heap gives theoretical `O(E + V log V)` but has big constants. But binary heap is preferred in contests/production.
 
