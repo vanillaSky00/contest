@@ -1,6 +1,10 @@
 #include "mst.h"
 #include <stdlib.h>
 #include <stdbool.h>
+#include <string.h>
+
+#define HASH_EMPTY 0
+#define HASH_OCCUPIED 1
 
 typedef struct PriorityQueue {
     Edge** Edges;
@@ -20,7 +24,7 @@ static Edge* poll(PriorityQueue* pq);
 static inline bool pq_empty(const PriorityQueue* pq) { return pq->size == 0; }
 
 static HashSet* hs_create(int cap_hint);
-static HashSet* insert(HashSet* h, int key);
+static void hs_add(HashSet* h, int key);
 static bool containsKey(HashSet* h, int key);
 
 // use prim algorithm since we do not know all the edges
@@ -33,7 +37,7 @@ void generate_mst(Node *start) {
 
     HashSet* seen = hs_create(100000);
 
-    seen = insert(seen, start->id);
+    seen = hs_add(seen, start->id);
     for (int i = 0; i < start->edge_count; i++) {
         Edge* e = start->edges[i];
         if (containsKey(seen, e->v->id)) {
@@ -49,15 +53,21 @@ void generate_mst(Node *start) {
         if (containsKey(seen, to->id)) continue;
 
         edge->keep = 1;
-        seen = insert(seen, to->id);
+        seen = hs_add(seen, to->id);
 
         for (int i = 0; i < to->edge_count; i++) {
             if (containsKey(seen, to->edges[i]->v->id) == false) {
-                offer(pq, to->edges[i]);
+        offer(pq, to->edges[i]);
                 // Do not insert into seen when pushing candidates—only when an edge is accepted.
             }
         }
     }
+
+    free(pq->Edges);
+    free(pq);
+    free(seen->keys);
+    free(seen->used);
+    free(seen);
 };
 
 
@@ -145,10 +155,35 @@ static HashSet* hs_create(int cap_hint) {
     h->used = calloc(h->capacity, sizeof(char));
 }
 
-static HashSet* insert(HashSet* h, int key) {
 
+static inline unsigned linear_probing(HashSet* h, int key) {
+    int i = key & (unsigned)(h->capacity - 1); // capacity must be a power of two
+
+    while (h->used[i]) {
+        if (h->keys[i] == key) return i;
+        i = (i + 1) & (h->capacity - 1);
+    }
+    return i;
+}
+
+static void hs_add(HashSet* h, int key) {
+    if (h == NULL) return;
+
+    if ((float)h->size / h->capacity > 0.7f) {
+        // Optional: implement rehash if needed; skip for 100k static use
+    }
+
+    unsigned idx = linear_probing(h, key);
+    if (h->used[idx]) return;
+
+    h->used[idx] = HASH_OCCUPIED;
+    h->keys[idx] = key;
+    h->size++;
 }
 
 static bool containsKey(HashSet* h, int key) {
+    if (h == NULL) return false;
 
+    unsigned idx = linear_probing(h, key);
+    return h->used[idx] && (h->keys[idx] == key);
 }
