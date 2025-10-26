@@ -13,7 +13,7 @@ int main() {
     memset(discovered, 0, sizeof(int) * MAX_NODES);
     memset(nodes, 0, sizeof(Node *) * MAX_NODES);
     memset(edges, 0, sizeof(Edge *) * MAX_EDGES);
-
+   
     while (scanf("%d%d%d", &u, &v, &w) == 3) {
         node_u = nodes[u];
         if (node_u == NULL) {

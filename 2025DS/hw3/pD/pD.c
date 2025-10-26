@@ -7,6 +7,9 @@
 #define HASH_EMPTY 0
 #define HASH_OCCUPIED 1
 
+#define DEBUG_LOG(msg,...)
+//#define DEBUG_LOG(msg,...) printf("Debug: " msg "\n" , ##__VA_ARGS__)
+
 typedef struct PriorityQueue {
     Edge** Edges;
     int size;
@@ -28,6 +31,15 @@ static HashSet* hs_create(int cap_hint);
 static void hs_add(HashSet* h, int key);
 static bool containsKey(HashSet* h, int key);
 
+
+// be careful that edge is undirected so u or v should be considered
+static inline Node* other(const Edge* e, const Node* from) {
+    if (e->u == from) return e->v;
+    if (e->v == from) return e->u;
+    return NULL; // will not happend
+}
+
+
 // use prim algorithm since we do not know all the edges
 void generate_mst(Node *start) {
     PriorityQueue* pq = (PriorityQueue*) malloc(sizeof(PriorityQueue));
@@ -40,24 +52,32 @@ void generate_mst(Node *start) {
     hs_add(seen, start->id);
     for (int i = 0; i < start->edge_count; i++) {
         Edge* e = start->edges[i];
-        if (!containsKey(seen, e->v->id)) {
+        if (!containsKey(seen, other(e, start)->id)) { 
             offer(pq, e);
         }
+
     }
     
     while (seen->size < MAX_NODES && !pq_empty(pq)) {
+        DEBUG_LOG("in pq");
         Edge* edge = poll(pq);
         if (edge == NULL) continue;
 
-        Node* to = edge->v;
-        if (containsKey(seen, to->id)) continue;
+        // Determine which side is the new vertex across the cut
+        bool u_seen = containsKey(seen, edge->u->id);
+        bool v_seen = containsKey(seen, edge->v->id);
+        
+        Node* to = NULL;
+        if (u_seen && !v_seen) to = edge->v;
+        else if (v_seen && !u_seen) to = edge->u;
+        else continue;
 
         edge->keep = 1;
         hs_add(seen, to->id);
 
         for (int i = 0; i < to->edge_count; i++) {
-            if (!containsKey(seen, to->edges[i]->v->id)) {
-        offer(pq, to->edges[i]);
+            if (!containsKey(seen, other(to->edges[i], to)->id)) {
+                offer(pq, to->edges[i]);
                 // Do not insert into seen when pushing candidates—only when an edge is accepted.
             }
         }
