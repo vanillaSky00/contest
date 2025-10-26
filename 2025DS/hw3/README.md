@@ -80,7 +80,38 @@ Note for Prims:
 Prim + PQ is both efficient and clean, and it won’t add cycles as long as you keep the visited check.
 
 
+# Hash Table
+Why not hash table:
+| Approach                     | Feasibility                                                                     | Notes |
+| ---------------------------- | ------------------------------------------------------------------------------- | ----- |
+| **Array / bool visited[id]** | ❌ Impossible if IDs are large (wastes memory)                                   |       |
+| **`id % MAX_NODES` trick**   | ❌ Collisions, incorrect behavior                                                |       |
+| **Bloom filter**             | ⚠️ Saves memory, but may skip valid vertices (false positives ⇒ incomplete MST) |       |
+| **Hashmap (`uthash`)**       | ✅ Exact, fast, and memory-efficient for 100 000 entries                         |       |
+| **ID compression + array**   | ✅ Also good, but more code; hashmap does the same automatically                 |       |
+
+<br>
+<br>
+
+| Concept              | Description                                                       |
+| -------------------- | ----------------------------------------------------------------- |
+| Table                | fixed array of buckets of size = power of two ≥ 2× expected count |
+| Hash function        | multiply by a big odd constant (`Knuth’s constant`)               |
+| Collision resolution | probe `i = (i + 1) & (cap-1)` until empty or key found            |
+
+- With capacity ≈ 200 000 and 100 000 inserts → expected O(1) lookups, < 1 MB memory.
+- If your IDs can be negative, this still works (hash casts to unsigned safely).
+- If you later need to rehash, you can easily extend hs_add to rebuild the table.
+
+
+## With `uthash` (header-only):
+- Average lookup / insert: O(1)
+- Memory per entry: ≈ 32–40 bytes
+- For 100 000 nodes → 3–4 MB total, perfectly fine even on embedded Linux.
+- No need to know the ID range in advance.
+
 ## Notes for pB
 - Use reset `adjSize[i] = 0` to track the number again.
 - Forget to initialize with `calloc(n, sizeof(e))` rather than `malloc` and then increment the element.
 - Size of topo result should be in same as the number of nodes not that of dependency.
+
