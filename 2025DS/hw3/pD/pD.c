@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
+#include <stdio.h>
 
 #define HASH_EMPTY 0
 #define HASH_OCCUPIED 1
@@ -29,7 +30,6 @@ static bool containsKey(HashSet* h, int key);
 
 // use prim algorithm since we do not know all the edges
 void generate_mst(Node *start) {
-
     PriorityQueue* pq = (PriorityQueue*) malloc(sizeof(PriorityQueue));
     pq->capacity = MAX_EDGES;
     pq->Edges = (Edge**) malloc(sizeof(Edge*) * pq->capacity);
@@ -37,10 +37,10 @@ void generate_mst(Node *start) {
 
     HashSet* seen = hs_create(100000);
 
-    seen = hs_add(seen, start->id);
+    hs_add(seen, start->id);
     for (int i = 0; i < start->edge_count; i++) {
         Edge* e = start->edges[i];
-        if (containsKey(seen, e->v->id)) {
+        if (!containsKey(seen, e->v->id)) {
             offer(pq, e);
         }
     }
@@ -53,10 +53,10 @@ void generate_mst(Node *start) {
         if (containsKey(seen, to->id)) continue;
 
         edge->keep = 1;
-        seen = hs_add(seen, to->id);
+        hs_add(seen, to->id);
 
         for (int i = 0; i < to->edge_count; i++) {
-            if (containsKey(seen, to->edges[i]->v->id) == false) {
+            if (!containsKey(seen, to->edges[i]->v->id)) {
         offer(pq, to->edges[i]);
                 // Do not insert into seen when pushing candidates—only when an edge is accepted.
             }
@@ -70,7 +70,6 @@ void generate_mst(Node *start) {
     free(seen);
 };
 
-
 static inline int compare_edge(Edge* e1, Edge* e2) {
     if (e1->w > e2->w) return 1; // might stackoverflow if we return w1 - w2
     else if (e1->w < e2->w) return -1;
@@ -79,8 +78,8 @@ static inline int compare_edge(Edge* e1, Edge* e2) {
 
 static inline void swap_edges(Edge** x, Edge** y) {
     Edge* tmp = *x; 
+    *x = *y;
     *y = tmp;
-    *x = tmp;
 }
 
 static void heapify_up(PriorityQueue* pq, int idx) {
@@ -90,7 +89,7 @@ static void heapify_up(PriorityQueue* pq, int idx) {
         int parent = (idx - 1) / 2;
         if (compare_edge(pq->Edges[idx], pq->Edges[parent]) < 0) {
             swap_edges(&pq->Edges[idx], &pq->Edges[parent]);
-            idx = idx / 2;
+            idx = parent;
         }
         else break;
     }
@@ -149,19 +148,20 @@ static inline unsigned hash_int(int x) {
 static HashSet* hs_create(int cap_hint) {
     HashSet* h = (HashSet*) malloc(sizeof(HashSet));
     h->capacity = 1;
-    while (h->capacity < cap_hint * 2) h->capacity << 1;// round up to power of two
+    while (h->capacity < cap_hint * 2) h->capacity <<= 1;// round up to power of two
+
     h->size = 0;
     h->keys = calloc(h->capacity, sizeof(int));
     h->used = calloc(h->capacity, sizeof(char));
+    return h;
 }
 
-
 static inline unsigned linear_probing(HashSet* h, int key) {
-    int i = key & (unsigned)(h->capacity - 1); // capacity must be a power of two
+    int i = hash_int(key) & (unsigned)(h->capacity - 1); // capacity must be a power of two
 
     while (h->used[i]) {
         if (h->keys[i] == key) return i;
-        i = (i + 1) & (h->capacity - 1);
+        i = (i + 1u) & (unsigned)(h->capacity - 1);
     }
     return i;
 }
