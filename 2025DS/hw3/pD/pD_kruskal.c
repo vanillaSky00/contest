@@ -18,9 +18,13 @@ typedef struct HashSet {
 } HashSet;
 
 typedef struct DSU {
-    /* data */
-};
+    int* parent;
+    int* rank;
+} DSU;
 
+static int find(DSU* dsu, int x);
+static void unionFind(DSU* dsu, int x, int y);
+static inline int compare_edge(const void* e1, const void* e2);
 
 static HashSet* hs_create(int cap_hint);
 static void hs_add(HashSet* h, int key);
@@ -42,16 +46,39 @@ void generate_mst(Node *start) {
     Edge** edges = bfs(start, &node_size, &edge_count);
     DEBUG_LOG("node_size = %d, edge_count = %d", node_size, edge_count);
 
-    //qsort();
+    DSU* dsu = (DSU*) malloc(sizeof(DSU));
+    dsu->parent = (int*) malloc(sizeof(int) * node_size);
+    dsu->rank = (int*) calloc(node_size, sizeof(int));
+    for (int i = 0; i < node_size; i++) {
+        dsu->parent[i] = i;
+    }
+
+    qsort(edges, edge_count, sizeof(Edge*), compare_edge);
 
     //check if cycle
-
+    int res_count = 0;
+    
+    DEBUG_LOG("after qsort");
+    for (int i = 0; i < edge_count; i++) {
+        DEBUG_LOG("w: %d", edges[i]->w);
+        int u = edges[i]->u->id;
+        int v = edges[i]->v->id;
+        
+        if (find(dsu, u) == find(dsu, v)) continue;
+        unionFind(dsu, u, v);
+        edges[i]->keep = 1;
+        res_count++;
+        if (res_count == node_size - 1) break;
+    }
 };
 
-static inline int compare_edge(Edge* e1, Edge* e2) {
-    if (e1->w > e2->w) return 1; // might stackoverflow if we return w1 - w2
-    else if (e1->w < e2->w) return -1;
-    else return 0;
+static inline int compare_edge(const void* a, const void* b) {
+    const Edge* e1 = *(Edge* const*)a;
+    const Edge* e2 = *(Edge* const*)b;
+    // avoid overflow from subtraction
+    if (e1->w < e2->w) return -1;
+    if (e1->w > e2->w) return 1;
+    return 0;
 }
 
 static Edge** bfs(Node* start, int* n, int* e) {
@@ -136,4 +163,20 @@ static bool containsKey(HashSet* h, int key) {
 
     unsigned idx = linear_probing(h, key);
     return h->used[idx] && (h->keys[idx] == key);
+}
+
+static int find(DSU* dsu, int x) {
+    return (dsu->parent[x] == x) ? x : (dsu->parent[x] = find(dsu, dsu->parent[x]));
+}
+
+static void unionFind(DSU* dsu, int x, int y) {
+    x = find(dsu, x);
+    y = find(dsu, y);
+    if (x == y) return;
+    if (dsu->rank[x] > dsu->rank[y]) dsu->parent[y] = x;
+    else if (dsu->rank[y] > dsu->rank[x]) dsu->parent[x] = y;
+    else {
+        dsu->parent[x] = y;
+        dsu->rank[y]++;
+    }
 }
