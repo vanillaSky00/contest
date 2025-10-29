@@ -103,15 +103,102 @@ Why not hash table:
 - If your IDs can be negative, this still works (hash casts to unsigned safely).
 - If you later need to rehash, you can easily extend hs_add to rebuild the table.
 
+<br>
 
-## With `uthash` (header-only):
+With `uthash` (header-only):
 - Average lookup / insert: O(1)
 - Memory per entry: ≈ 32–40 bytes
 - For 100 000 nodes → 3–4 MB total, perfectly fine even on embedded Linux.
 - No need to know the ID range in advance.
 
-## Notes for pB
+## Design problem
+
+### Why do we need 3 state
+
+Consider linear probing: two keys hash to the same slot, we keep moving forward untile we find an empty place.
+```c
+while(hs->used[key]->entry->state != HASH_EMPTY) key++;
+```
+Example (capacity = 7)
+
+| Index | State    | Key |
+| :---- | :------- | :-- |
+| 0     | OCCUPIED | 10  |
+| 1     | OCCUPIED | 17  |
+| 2     | OCCUPIED | 24  |
+| 3     | EMPTY    |     |
+| 4     | …        |     |
+
+`hash(10)=0`, `hash(17)=0`, `hash(24)=0` all collided and landed consecutively. <br>
+Supposed we `remove(17)`
+
+| Index | State    | Key |
+| :---- | :------- | :-- |
+| 0     | OCCUPIED | 10  |
+| 1     | EMPTY ❌  |     |
+| 2     | OCCUPIED | 24  |
+
+If we `search(24)`
+```c
+int search(HashMap* hs, int key) {
+    ...
+    linear_probing(hs, key);
+}
+```
+- `hash(24) = 0`
+- Probe sequence = 0 → 1 → 2
+- BUT you stop at index 1 because it’s EMPTY, thinking “nothing beyond this was ever occupied.”
+
+use `DELETED` then linear probing can continue to find
+
+
+| Index | State      | Key      |
+| :---- | :--------- | :------- |
+| 0     | OCCUPIED   | 10       |
+| 1     | DELETED ☠️ | (was 17) |
+| 2     | OCCUPIED   | 24       |
+
+
+<br>
+
+| State        | Meaning                | Action during search   | Action during insert |
+| :----------- | :--------------------- | :--------------------- | :------------------- |
+| **EMPTY**    | never occupied         | stop probing           | can insert here      |
+| **OCCUPIED** | active key             | if key matches → found | skip (collision)     |
+| **DELETED**  | was occupied, now free | continue probing       | may reuse later      |
+
+### Why `find_index()` and `find_insert_slot()`
+
+| Operation            | Stop condition                                       | What to return                 |
+| -------------------- | ---------------------------------------------------- | ------------------------------ |
+| `find_index()`       | stops when finds key OR hits EMPTY                   | index of existing key, else -1 |
+| `find_insert_slot()` | may stop at first DELETED or EMPTY (prefers DELETED) | best slot to insert/update     |
+
+### Why we prefer “insert / delete” with a state flag instead of moving elements
+
+#### Simplicity
+If physically shift every subsequent element left when deleting one(like an array erase),<br> it's $O(n)$ and breaks the amortized $O(1)$
+
+#### Cache locality
+Probing is sequential — the CPU prefetcher can easily follow it. <br>
+Having state flags (`char state`) keeps data compact and fast to scan.
+
+#### Performance & Rehashing
+
+$
+load\ factor = \frac{occupied\ slots}{capacity}
+$
+
+For open addressing, once > 0.7, the expected probe length grows sharply (clustering).<br>
+Allocate a new table with double capacity, reinsert every OCCUPIED entry.
+Rehashing takes `O(n)` but happens rarely (`amortized O(1)`).
+
+# BFS in pB
 - Use reset `adjSize[i] = 0` to track the number again.
 - Forget to initialize with `calloc(n, sizeof(e))` rather than `malloc` and then increment the element.
 - Size of topo result should be in same as the number of nodes not that of dependency.
+- BFS will not collect all edges, it collects only edges of BFS tree
 
+### Bidirectional BFS
+In summary: two source should expand by layers (all adj nodes) rather than by a node<br>
+https://zdimension.fr/everyone-gets-bidirectional-bfs-wrong/
