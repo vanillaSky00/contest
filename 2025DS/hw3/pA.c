@@ -48,7 +48,7 @@ int* solver(int** bridges, int* collapse, int n, int m, int q) {
     }
 
     // find compression all nodes
-    for (int i = 0; i <= n; i++) {
+    for (int i = 0; i < n; i++) {
         find(dsu, i);
     }
 
@@ -65,10 +65,15 @@ int* solver(int** bridges, int* collapse, int n, int m, int q) {
     int* res = (int*) malloc(sizeof(int) * (q + 1));
     res[q] = group_num;
 
+    for (int i = 0; i < n; i++) {
+        printf("%d, ", dsu->parent[i]);
+    }
+    printf("\n");
+    
     // reverse: add from last
     for (int i = q - 1; i >= 0; i--) {
         int c = collapse[i];
-        if(union_find(dsu, bridges[c][0], bridges[c][1]) == false) group_num--;
+        if(union_find(dsu, bridges[c - 1][0], bridges[c - 1][1])) group_num--;
         res[i] = group_num;
     }
 
