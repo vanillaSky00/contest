@@ -39,7 +39,7 @@ int* solver(int** bridges, int* collapse, int n, int m, int q) {
     for (int i = 0; i < n; i++) dsu->parent[i] = i;
 
     bool* is_collapsed = (bool*) calloc(m, sizeof(bool));
-    for (int i = 0; i < q; i++) is_collapsed[collapse[i] - 1] = true;
+    for (int i = 0; i < q; i++) is_collapsed[collapse[i]] = true;
     
     int components = n;
     for (int i = 0; i < m; i++) {
@@ -53,8 +53,8 @@ int* solver(int** bridges, int* collapse, int n, int m, int q) {
     
     // reverse: add from last
     for (int i = q - 1; i >= 0; i--) {
-        int c = collapse[i];
-        if(union_find(dsu, bridges[c - 1][0], bridges[c - 1][1])) components--;
+        int c = collapse[i]; // 1 based
+        if(union_find(dsu, bridges[c][0], bridges[c][1])) components--;
         res[i] = components;
     }
 
@@ -77,12 +77,16 @@ int main() {
     }
     int* collapse = (int*) malloc(sizeof(int) * q);
 
+    // All turn node and edge_id to 0 based
     for (int i = 0; i < m; i++) {
         scanf("%d%d", &bridges[i][0], &bridges[i][1]);
+        bridges[i][0]--;
+        bridges[i][1]--;
     }
 
     for (int i = 0; i < q; i++) {
         scanf("%d", &collapse[i]);
+        collapse[i]--;
     }
 
     int* res = solver(bridges, collapse, n, m, q);
@@ -94,6 +98,6 @@ int main() {
     free(bridges);
     free(collapse);
     free(res);
-    
+
     return 0;
 }
