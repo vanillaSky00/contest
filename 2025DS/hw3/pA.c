@@ -41,47 +41,27 @@ int* solver(int** bridges, int* collapse, int n, int m, int q) {
     bool* is_collapsed = (bool*) calloc(m, sizeof(bool));
     for (int i = 0; i < q; i++) is_collapsed[collapse[i] - 1] = true;
     
+    int components = n;
     for (int i = 0; i < m; i++) {
         if (!is_collapsed[i]) {
-            union_find(dsu, bridges[i][0], bridges[i][1]);
-        }
-    }
-
-    // find compression all nodes
-    for (int i = 0; i < n; i++) {
-        find(dsu, i);
-    }
-
-    bool* is_root = (bool*) calloc(n, sizeof(bool));
-    int group_num = 0;
-    for (int i = 0; i < n; i++) {
-        int r = dsu->parent[i];
-        if (is_root[r] == false) {
-            group_num++;
-            is_root[r] = true;
+            if (union_find(dsu, bridges[i][0], bridges[i][1])) components--;
         }
     }
 
     int* res = (int*) malloc(sizeof(int) * (q + 1));
-    res[q] = group_num;
-
-    for (int i = 0; i < n; i++) {
-        printf("%d, ", dsu->parent[i]);
-    }
-    printf("\n");
+    res[q] = components;
     
     // reverse: add from last
     for (int i = q - 1; i >= 0; i--) {
         int c = collapse[i];
-        if(union_find(dsu, bridges[c - 1][0], bridges[c - 1][1])) group_num--;
-        res[i] = group_num;
+        if(union_find(dsu, bridges[c - 1][0], bridges[c - 1][1])) components--;
+        res[i] = components;
     }
 
     free(dsu->parent);
     free(dsu->rank);
     free(dsu);
     free(is_collapsed);
-    free(is_root);
     return res;
 }
 
@@ -113,5 +93,7 @@ int main() {
     for (int i = 0; i < m; i++) free(bridges[i]);
     free(bridges);
     free(collapse);
+    free(res);
+    
     return 0;
 }
