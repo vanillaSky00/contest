@@ -7,17 +7,16 @@
 typedef struct DSU {
     int* parent;
     int* rank;
-    int** groups;
 } DSU;
 
 int find(DSU* dsu, int x) {
-    return (dsu->parent[x] == x) ? x : (dsu->parent[x] = find(dsu, x));
+    return (dsu->parent[x] == x) ? x : (dsu->parent[x] = find(dsu, dsu->parent[x]));
 }
 
-void union_find(DSU* dsu, int x, int y) {
+bool union_find(DSU* dsu, int x, int y) {
     x = find(dsu, x);
     y = find(dsu, y);
-    if (x == y) return;
+    if (x == y) return false; // if already in same group
     
     if (dsu->rank[x] > dsu->rank[y]) {
         dsu->parent[y] = x;
@@ -29,43 +28,57 @@ void union_find(DSU* dsu, int x, int y) {
         dsu->parent[x] = y;
         dsu->rank[y]++;
     }
+    return true; 
 }
 
+int* solver(int** bridges, int* collapse, int n, int m, int q) {
+    DSU* dsu    = (DSU*) malloc(sizeof(DSU));
+    dsu->parent = (int*) malloc(sizeof(int) * n);
+    dsu->rank   = (int*) calloc(n, sizeof(int));
 
+    for (int i = 0; i < n; i++) dsu->parent[i] = i;
 
-void solver(int** bridges, int* collapse, int n, int m, int q) {
-    DSU* dsu = (DSU*) malloc(sizeof(DSU));
-    dsu->parent = (int*) malloc(sizeof(int) * (n + 1));
-    dsu->rank = (int*) calloc(n + 1,sizeof(int));
-
-    for (int i = 0; i <= n; i++) dsu->parent[i] = i;
-
-    int e = 200000 < (n * (n-1))/2 ? 200000 : (n * (n-1))/2;
-    bool* seen = (bool*) calloc(e, sizeof(bool));
-    for (int i = 0; i < q; i++) seen[collapse[i]] = true;
+    bool* is_collapsed = (bool*) calloc(m, sizeof(bool));
+    for (int i = 0; i < q; i++) is_collapsed[collapse[i] - 1] = true;
     
-
-    for (int i = 0; i < q; i++) {
-        if (collapse[i] == false) {
+    for (int i = 0; i < m; i++) {
+        if (!is_collapsed[i]) {
             union_find(dsu, bridges[i][0], bridges[i][1]);
         }
     }
 
-    // TODO
-    print_groups(dsu);
+    // find compression all nodes
+    for (int i = 0; i <= n; i++) {
+        find(dsu, i);
+    }
+
+    bool* is_root = (bool*) calloc(n, sizeof(bool));
+    int group_num = 0;
+    for (int i = 0; i < n; i++) {
+        int r = dsu->parent[i];
+        if (is_root[r] == false) {
+            group_num++;
+            is_root[r] = true;
+        }
+    }
+
+    int* res = (int*) malloc(sizeof(int) * (q + 1));
+    res[q] = group_num;
 
     // reverse: add from last
-    for (int i = q - 1; i >= 0; i++) {
-        union_find(dsu, bridges[i][0], bridges[i][1]);
-        print_groups(dsu);
+    for (int i = q - 1; i >= 0; i--) {
+        int c = collapse[i];
+        if(union_find(dsu, bridges[c][0], bridges[c][1]) == false) group_num--;
+        res[i] = group_num;
     }
 
     free(dsu->parent);
     free(dsu->rank);
     free(dsu);
-    free(seen);
+    free(is_collapsed);
+    free(is_root);
+    return res;
 }
-
 
 
 int main() {
@@ -87,7 +100,10 @@ int main() {
         scanf("%d", &collapse[i]);
     }
 
-    solver(bridges, collapse, n, m, q);
+    int* res = solver(bridges, collapse, n, m, q);
+    for (int i = 0; i <= q; i++) {
+        printf("%d\n", res[i]);
+    }
 
     for (int i = 0; i < m; i++) free(bridges[i]);
     free(bridges);
