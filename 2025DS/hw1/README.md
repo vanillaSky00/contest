@@ -15,7 +15,7 @@ A loop like for t=K..max(a)
 
 Naïve `O(N·M)` is too slow. (1 <= N, M <= 1e6)
 
-## $\max_{t \geq K} \sum_{i=1}^{N} \left\lfloor \frac{a_i}{t} \right\rfloor \cdot t$
+### $\max_{t \geq K} \sum_{i=1}^{N} \left\lfloor \frac{a_i}{t} \right\rfloor \cdot t$
 
 $N = number\ of\ squads$ <br>
 $a_i = size\ of squad\  i$ <br>
@@ -43,7 +43,7 @@ for (int t = K; t <= maxNum; t++) {
 Time Complexity : `MlogM`
 
 
-### $ \sum_{t=K}^{M} \frac{M}{t} = M \cdot H_M \approx M \log M$
+### $\sum_{t=K}^{M} \frac{M}{t} = M \cdot H_M \approx M \log M$
 
 $M = max(a_i​)$ <br>
 $H_M = the\ 𝑀-th\ harmonic\ number$ <br>
