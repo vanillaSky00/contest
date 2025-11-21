@@ -15,7 +15,7 @@ A loop like for t=K..max(a)
 
 Naïve `O(N·M)` is too slow. (1 <= N, M <= 1e6)
 
-### $ \max_{t \geq K} ; \sum_{i=1}^{N} \left\lfloor \frac{a_i}{t} \right\rfloor \cdot t$
+## $\max_{t \geq K} \sum_{i=1}^{N} \left\lfloor \frac{a_i}{t} \right\rfloor \cdot t$
 
 $N = number\ of\ squads$ <br>
 $a_i = size\ of squad\  i$ <br>
