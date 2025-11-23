@@ -1,0 +1,64 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <string.h>
+
+typedef struct Fheap {
+    /* data */
+} Fheap;
+
+void insert(Fheap f, int key) {
+
+}
+
+void delete(Fheap f, int key) {
+
+}
+
+void decrease(Fheap f, int key, int val) {
+
+}
+
+int extract_min(Fheap f) {
+    return 0;
+}
+
+#define MAX_BUFF 12
+int main(void) {
+
+    char *cmd = malloc(MAX_BUFF);
+    int key;
+    int val;
+    
+    while (true) {
+        if (scanf("%11s", cmd) != 1)   // safe input
+            break;
+
+        if (strcmp(cmd, "insert") == 0) {
+            scanf("%d", &key);
+            printf("insert %d\n", key);
+        } 
+        else if (strcmp(cmd, "delete") == 0) {
+            scanf("%d", &key);
+            printf("delete %d\n", key);
+        }
+        else if (strcmp(cmd, "decrease") == 0) {
+            scanf("%d", &key);
+            scanf("%d", &val);
+            printf("decrease %d %d\n", key, val);
+        }
+        else if (strcmp(cmd, "extract-min") == 0) {
+            printf("extract-min\n");
+        }
+        else if (strcmp(cmd, "exit") == 0) {
+            return 0;
+        }
+        else {
+            fprintf(stderr, "Invalid arguments\n");
+            return -1;
+        }
+    }
+
+    free(cmd);
+    return 0;
+}
