@@ -9,83 +9,48 @@ typedef struct Node {
     struct Node *next;
 } Node;
 
-void deleteAfter(Node* n) {
-    // since we have dummy head and dummy tail so it all the same
-    Node *deleted = n->next;
-    n->next = deleted->next;
-    deleted->next = NULL;
-    free(deleted);
+void freeNode(Node* n) {
+    if (n) free(n);
 }
 
-Node *combineSame(Node *n) {
-    if (n == NULL || n->score == INT32_MIN) return NULL;
+Node *compressAndClean(Node *n) {
 
-    Node *tmp = n;
-    while (tmp && 
-           tmp->next && 
-           tmp->temp == tmp->next->temp) {
+}
 
-            tmp->score += tmp->next->score;
-            deleteAfter(tmp); 
+Node *mergeSortedLists(Node *listA, Node *listB) {
+    Node dummy;
+    Node *tail = &dummy;
+    dummy.next == NULL;
+
+    while (listA && listB) {
+        if (listA->temp > listB->temp) {
+            tail->next = listA;
+            listA = listA->next;
+        }
+        else if (listA->temp < listB->temp) {
+            tail->next = listB;
+            listB = listB->next;
+        }
+        else {
+            // append both
+            tail->next = listA;
+            listA = listA->next;
+            tail = tail->next;
+
+            tail->next = listB;
+            listB = listB->next;
+        }
+        tail = tail->next;
     }
-    return n;
+
+    if (listA) tail->next = listA;
+    if (listB) tail->next = listB;
+    return dummy.next;
 }
 
 Node *mergeReport(Node *reportA, Node *reportB) {
-    // get the actual head;
-    reportA = combineSame(reportA);
-    reportB = combineSame(reportB);
-    if (reportA == NULL) return reportB;
-    if (reportB == NULL) return reportA;
-    
-    // A always the max
-    if (reportA->temp < reportB->temp) {
-        Node *tmp = reportA;
-        reportA = reportB;
-        reportB = tmp;
-    }
-
-    Node *tail_A = reportA;
-    Node *tail_B = reportB;
-    while (tail_A && tail_A->next && tail_B && tail_B->next &&
-          (tail_A->next->score != INT32_MIN || tail_B->next->score != INT32_MIN)) {
-        
-        Node *prev = NULL;
-        while (tail_A->next->score != INT32_MIN && 
-               tail_B->next->score != INT32_MIN &&
-               tail_A->temp > tail_B->temp) {
-            prev = tail_A;
-            tail_A = tail_A->next;
-        }
-
-        if (tail_A->next->score == INT32_MIN || 
-            tail_B->next->score == INT32_MIN) break;
-
-        // if not go to dummy node in list then prev must not NULL, so insert to after prev
-        Node *node = tail_B;
-        tail_B = tail_B->next;
-        
-        tail_B->next = tail_A->next;
-        tail_A->next = tail_B;
-    }
-
-    if (tail_A->score == INT32_MIN) {
-        Node *dummy_tA = tail_A;
-        // append rest B to A and remain dummy tail property
-        tail_A->next = tail_B;
-        while (tail_A->next != NULL) tail_A = tail_A->next;
-        tail_A->next = dummy_tA;
-    }
-    // other case: B done, then all done
-
-    reportA = combineSame(reportA);
-    return reportA;
-}
-
-Node *insertAfter(Node *tail, Node *new) {
-    new->next = tail->next;
-    tail->next = new;
-    return new;
+    Node *mergerHead = mergeSortedLists(reportA, reportB);
+    return compressAndClean(mergerHead);
 }
 
 Node *createNode(int s, int t) {
@@ -100,40 +65,36 @@ int main(void) {
     int m, n;
     if (scanf("%d%d", &m, &n) != 2) return -1;
 
-    Node *dummy_hA = (Node*) malloc(sizeof(Node));
-    Node *dummy_hB = (Node*) malloc(sizeof(Node));
-    Node *dummy_tA = (Node*) malloc(sizeof(Node));
-    Node *dummy_tB = (Node*) malloc(sizeof(Node));
-    dummy_hA->score = dummy_hA->temp = dummy_hB->score = dummy_hB->temp = INT32_MIN;
-    dummy_tA->score = dummy_tA->temp = dummy_tB->score = dummy_tB->temp = INT32_MIN;
-    dummy_hA->next = dummy_hB->next = NULL;
-
-    Node *tail_A = dummy_hA, *tail_B = dummy_hB;
     int s, t;
+
+    Node dummyA;
+    Node *tailA = &dummyA;
+    dummyA.next = NULL;
     while (m-- > 0) {
         if (scanf("%d%d", &s, &t) != 2) return -1;
-        tail_A = insertAfter(tail_A, createNode(s, t));
+        tailA->next = createNode(s, t);
+        tailA = tailA->next;
     }
-    insertAfter(tail_A, dummy_tA);
 
+    Node dummyB;
+    Node *tailB = &dummyB;
+    dummyB.next = NULL;
     while (n-- > 0) {
         if (scanf("%d%d", &s, &t) != 2) return -1;
-        tail_B = insertAfter(tail_B, createNode(s, t));
+        tailB->next = createNode(s, t);
+        tailB = tailB->next;
     }
-    insertAfter(tail_B, dummy_tB);
 
-    Node *ans = mergeReport(dummy_hA->next, dummy_hB->next); // get the actual head
+    Node *res = mergeReport(dummyA.next, dummyB.next); // get the actual head
 
-    bool isEmpty = true;
-    Node *tmp = (ans == NULL) ? NULL : ans->next;
-    while (tmp != NULL && tmp->score != INT32_MIN) {
-        if (tmp->score == 0) continue;
-        printf("%d %d\n", tmp->score, tmp->temp);
-        tmp = tmp->next;
-        isEmpty = false;
+    if (res == NULL) {
+        printf("0\n");
     }
-    
-    if (isEmpty) printf("0\n");
+    else {
+        while (res != NULL) {
+            printf("%d %d\n", res->score, res->temp);
+            res = res->next;
+    }
 
     return 0;
 }
