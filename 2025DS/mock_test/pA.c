@@ -94,6 +94,7 @@ int main(void) {
         while (res != NULL) {
             printf("%d %d\n", res->score, res->temp);
             res = res->next;
+        }
     }
 
     return 0;
