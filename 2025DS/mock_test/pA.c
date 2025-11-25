@@ -106,18 +106,19 @@ int main(void) {
     Node *dummy_tB = (Node*) malloc(sizeof(Node));
     dummy_hA->score = dummy_hA->temp = dummy_hB->score = dummy_hB->temp = INT32_MIN;
     dummy_tA->score = dummy_tA->temp = dummy_tB->score = dummy_tB->temp = INT32_MIN;
-    
-    Node *tail_A, *tail_B;
+    dummy_hA->next = dummy_hB->next = NULL;
+
+    Node *tail_A = dummy_hA, *tail_B = dummy_hB;
     int s, t;
     while (m-- > 0) {
         if (scanf("%d%d", &s, &t) != 2) return -1;
-        tail_A = insertAfter(dummy_hA, createNode(s, t));
+        tail_A = insertAfter(tail_A, createNode(s, t));
     }
     insertAfter(tail_A, dummy_tA);
 
     while (n-- > 0) {
         if (scanf("%d%d", &s, &t) != 2) return -1;
-        tail_B = insertAfter(dummy_hB, createNode(s, t));
+        tail_B = insertAfter(tail_B, createNode(s, t));
     }
     insertAfter(tail_B, dummy_tB);
 
