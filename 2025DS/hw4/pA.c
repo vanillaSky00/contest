@@ -3,11 +3,38 @@
 #include <stdbool.h>
 #include <string.h>
 
+typedef struct Node {
+    int key;
+    int mark; 
+    int degree;
+    struct Node *next;
+    struct Node *child_head;
+} Node;
+
 typedef struct Fheap {
-    /* data */
+    Node *next;
+    int min;
 } Fheap;
 
+void free_node(Node *n) {
+    if (n) free(n);
+}
+
+Node *create_node(int key) {
+    Node *n = (Node*) malloc(sizeof(Node));
+    n->key = key;
+    n->mark = 0;
+    n->degree = 0;
+    n->next = NULL;
+    n->child_head = NULL;
+}
+
 void insert(Fheap *f, int key) {
+    Node *node = create_node(key);
+    
+    if (f->next == NULL) f->next = node;
+    node->next = f->next;
+    f->next = node;
     printf("insert %d\n", key);
 }
 
