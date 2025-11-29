@@ -37,10 +37,20 @@ Node *decrease(Fheap *f, int key, int val);
 int extract_min(Fheap *f);
 void insert_node(Fheap *f, Node *node);
 void free_node(Node *n) {if (n) free(n);}
-
+int find_min(Fheap *f);
 
 void free_fheap() {
 
+}
+
+int find_min(Fheap *f) {
+    Node *curr = f->root;
+    int min = INT32_MAX;
+    while (curr != NULL) {
+        if (curr->key < min) min = curr->key;
+        curr = curr->next;
+    }
+    return min;
 }
 
 Node *create_node(int key) {
@@ -152,6 +162,8 @@ void insert(Fheap *f, int key) {
     Node *new_node = create_node(key);
     handler[new_node->key] = new_node;
     
+    if (new_node->key < f->min) f->min = new_node->key;
+
     Node *curr = f->root;
     if (curr == NULL) f->root = new_node;
     else {
@@ -215,6 +227,7 @@ Node *delete(Fheap *f, int key) {
         }
     }
 
+    if (t->key == f->min) f->min = find_min(f);
     free_node(t);
     return p;
 }
@@ -226,7 +239,7 @@ Node *decrease(Fheap *f, int key, int val) {
 
 int extract_min(Fheap *f) {
     int min = f->min;
-    delete(f, min);
+    delete(f, min); // already update min
     DEBUG("extract-min\n");
     return min;
 }
@@ -334,11 +347,13 @@ int main(void) {
         else if (strcmp(cmd, "decrease") == 0) {
             scanf("%d", &key);
             scanf("%d", &val);
-            decrease(fheap, key, val);
+            Node *p = decrease(fheap, key, val);
+            cascading_cut(fheap, p);
         }
         else if (strcmp(cmd, "extract-min") == 0) {
             extract_min(fheap);
-            //consolidate(fheap);
+            //cascading_cut(fheap, p); // must root no parent
+            consolidate(fheap);
         }
         else if (strcmp(cmd, "exit") == 0) {
             test_print(fheap);
