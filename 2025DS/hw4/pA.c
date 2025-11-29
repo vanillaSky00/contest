@@ -5,11 +5,14 @@
 #include <stdint.h>
 
 #define NODE_CAP 10001
+#define MAX_DEGREE 500
 typedef struct Node {
     int key;
     int mark; 
     int degree;
     struct Node *next;
+    struct Node *prev;
+    struct Node *parent;
     struct Node *child_head;
 } Node;
 
@@ -19,10 +22,24 @@ typedef struct Fheap {
 } Fheap;
 
 Node *handler[NODE_CAP];
+Node *degrees[MAX_DEGREE];
 
-void free_node(Node *n) {
-    if (n) free(n);
-}
+void free_node(Node *n);
+void free_fheap();
+Node *create_node(int key);
+Fheap *init_fheap();
+Node *unite(Node *tree1, Node* tree2);
+void consolidate(Fheap *f);
+void cuscading_cut();
+void insert(Node *root, Node *new_node);
+void delete(Fheap *f, int key);
+void decrease(Fheap *f, int key, int val);
+int extract_min(Fheap *f);
+
+
+
+void free_node(Node *n) {if (n) free(n);}
+
 
 void free_fheap() {
 
@@ -39,31 +56,61 @@ Fheap *init_fheap() {
     Fheap *f = (Fheap *) malloc(sizeof(Fheap));
     
     Node *dummy_head = (Node *) create_node(INT32_MIN); 
-    Node *dummy_tail = (Node *) create_node(INT32_MIN);
-    dummy_head->degree = dummy_tail->degree = -1;
-
+    dummy_head->degree = -1;
     f->root = dummy_head;
-    dummy_head->next = dummy_tail;
     return f;
 }
 
+Node *unite(Node *tree1, Node* tree2) {
+    if (tree1 == NULL) return tree2;
+    if (tree2 == NULL) return tree1;
 
+    if (tree1->key > tree2->key) {
+        Node *tmp = tree1;
+        tree1 = tree2;
+        tree2 = tmp;
+    }
 
-void consolidate(Node *n) {
+    if (tree1->child_head == NULL) tree1->child_head = tree2;
+    else insert(tree1->child_head, tree2);
+    return tree1;
+}
 
+void consolidate(Fheap *f) {
+    Node *curr = f->root->next;
+    Node *org_next = curr->next;
+    while (curr != NULL) {
+
+        Node *united_node = curr;
+        for (int d = curr->degree; d < MAX_DEGREE; d++) {
+            if (degrees[d] == NULL) {
+                degrees[d] = united_node;
+                break;
+            }
+            else {
+                united_node = unite(curr, degrees[d]);
+                united_node->degree++;
+                degrees[d] = NULL;
+            }
+        }
+
+        curr = org_next;
+    }
 }
 
 void cuscading_cut() {
 
 }
 
-void insert(Fheap *f, int key) {
-    // O(1) lazy 
-    Node *new_node = create_node(key);
-    handler[key] = new_node;
-    
-    new_node->next = f->root->next;
-    f->root->next = new_node;
+void insert(Node *n1, Node *n2) {
+    // O(1) doubly linked lazy 
+
+    n2->next = n1->next;
+    if (n1->next) n1->next->prev = n2;   
+    n1->next = n2;
+    n2->prev = n1;
+
+    n2->parent = n1->parent;
 }
 
 void delete(Fheap *f, int key) {
@@ -104,7 +151,10 @@ int main(void) {
 
         if (strcmp(cmd, "insert") == 0) {
             scanf("%d", &key);
-            insert(fheap, key);
+            Node *new_node = create_node(key); // this would avoid duplicate code for insert by node or key
+            handler[new_node->key] = new_node;
+            insert(fheap->root, new_node);
+            consolidate(fheap);
         } 
         else if (strcmp(cmd, "delete") == 0) {
             scanf("%d", &key);
