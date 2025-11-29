@@ -22,7 +22,6 @@ typedef struct Fheap {
 } Fheap;
 
 Node *handler[NODE_CAP];
-Node *degrees[MAX_DEGREE];
 
 void free_node(Node *n);
 void free_fheap();
@@ -68,6 +67,7 @@ Node *unite(Node *tree1, Node* tree2) {
         tree2 = tmp;
     }
 
+    // this cause loop
     if (tree2->prev) tree2->prev->next = tree2->next;
     if (tree2->next) tree2->next->prev = tree2->prev;
     tree2->prev = tree2->next = NULL;
@@ -76,16 +76,18 @@ Node *unite(Node *tree1, Node* tree2) {
     if (head == NULL) 
         tree1->child_head = tree2;
     else {
-        tree2->next = head->next;
-        if (head->next) head->next->prev = tree2;
-        head->next = tree2;
-        tree2->prev = head;
+        tree2->next = head;
+        head->prev = tree2;
+        tree1->child_head = tree2; // always insert front of child head
     }
     
+    tree2->parent = tree1;
     return tree1;
 }
 
 void consolidate(Fheap *f) {
+    Node *degrees[MAX_DEGREE] = {NULL};
+
     Node *curr = f->root;
     
     while (curr != NULL) {
