@@ -30,10 +30,10 @@ Node *create_node(int key);
 Fheap *init_fheap();
 Node *unite(Node *tree1, Node* tree2);
 void consolidate(Fheap *f);
-void cascading_cut(Node *n);
+void cascading_cut(Fheap *f, Node *t);
 void insert(Fheap *, int key);
-void delete(Fheap *f, int key);
-void decrease(Fheap *f, int key, int val);
+Node *delete(Fheap *f, int key);
+Node *decrease(Fheap *f, int key, int val);
 int extract_min(Fheap *f);
 void insert_node(Fheap *f, Node *node);
 void free_node(Node *n) {if (n) free(n);}
@@ -114,8 +114,37 @@ void consolidate(Fheap *f) {
     }
 }
 
-void cascading_cut(Node *n) {
+void cascading_cut(Fheap *f, Node *x) {
+    if (f == NULL || x == NULL) return;
+    // Stop if x is a root, and root does not mark
+    if (x->parent == NULL) return;
 
+    if (x->mark == 0) {
+        x->mark = 1;
+    }
+    else { 
+
+        if (x->prev) x->prev->next = x->next;
+        if (x->next) x->next->prev = x->prev;
+
+        Node *p = x->parent;
+        p->degree--;
+
+        if (p->child_head == x) {
+            p->child_head = x->next; 
+            if (x->next) x->next->prev = NULL;
+            // need change parent here? or is done?
+        }
+        
+        // prepare for root list
+        x->prev = NULL;
+        x->next = NULL;
+        x->parent = NULL;
+        x->mark = 0;
+        insert_node(f, x);
+
+        cascading_cut(f, p);
+    }
 }
 
 void insert(Fheap *f, int key) {
@@ -148,9 +177,9 @@ void insert_node(Fheap *f, Node *node) {
     }
 }
 
-void delete(Fheap *f, int key) {
+Node *delete(Fheap *f, int key) {
     Node *t = handler[key];
-    if (!t) return;
+    if (!t) return NULL;
     handler[key] = NULL;
 
     // 4 cases with or without child/ parent
@@ -163,6 +192,7 @@ void delete(Fheap *f, int key) {
             child->next = NULL;
             child->prev = NULL;
             child->parent = NULL;
+            child->mark = 0;
             insert_node(f, child);
 
             child = next;
@@ -174,9 +204,8 @@ void delete(Fheap *f, int key) {
     if (t->next) t->next->prev = t->prev;
     if (f->root == t) f->root = t->next; // handling root
 
-    if (t->parent != NULL) {
-        Node *p = t->parent;
-        p->mark++;
+    Node *p = t->parent;
+    if (p != NULL) {
         p->degree--;
 
         if (p->child_head == t) {
@@ -184,17 +213,13 @@ void delete(Fheap *f, int key) {
             if (t->next) t->next->prev = NULL;
             // need change parent here? or is done?
         }
-
-        if (p->mark == 2) {
-            p->mark = 0;
-            delete(f, p);
-        }
     }
 
     free_node(t);
+    return p;
 }
 
-void decrease(Fheap *f, int key, int val) {
+Node *decrease(Fheap *f, int key, int val) {
     Node *target = handler[key];
     
 }
@@ -302,7 +327,9 @@ int main(void) {
         } 
         else if (strcmp(cmd, "delete") == 0) {
             scanf("%d", &key);
-            delete(fheap, key);
+            Node *p = delete(fheap, key);
+            cascading_cut(fheap, p);
+            consolidate(fheap);
         }
         else if (strcmp(cmd, "decrease") == 0) {
             scanf("%d", &key);
@@ -311,6 +338,7 @@ int main(void) {
         }
         else if (strcmp(cmd, "extract-min") == 0) {
             extract_min(fheap);
+            //consolidate(fheap);
         }
         else if (strcmp(cmd, "exit") == 0) {
             test_print(fheap);
