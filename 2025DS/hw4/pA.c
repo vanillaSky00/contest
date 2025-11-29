@@ -270,8 +270,8 @@ int cmp_roots(const void *a, const void *b){
 int cmp_keys(const void *a, const void *b) {
     const Node *x = *(const Node **)a;
     const Node *y = *(const Node **)b;
-    if (x->degree < y->degree) return -1;
-    if (x->degree > y->degree) return 1;
+    if (x->key < y->key) return -1;
+    if (x->key > y->key) return 1;
     return 0;
 }
 
