@@ -3,8 +3,8 @@
 #include <stdbool.h>
 #include <string.h>
 #include <stdint.h>
-#define DEBUG(msg,...) printf("DEBUG: " msg "\n" , ##__VA_ARGS__)
-//#define DEBUG(msg,...)
+//#define DEBUG(msg,...) printf("DEBUG: " msg "\n" , ##__VA_ARGS__)
+#define DEBUG(msg,...)
 #define NODE_CAP 10001
 #define MAX_DEGREE 500
 typedef struct Node {
@@ -24,20 +24,7 @@ typedef struct Fheap {
 
 Node *handler[NODE_CAP];
 
-void free_node(Node *n);
-void free_fheap();
-Node *create_node(int key);
-Fheap *init_fheap();
-Node *unite(Node *tree1, Node* tree2);
-void consolidate(Fheap *f);
-void cascading_cut(Fheap *f, Node *t);
-void insert(Fheap *, int key);
-Node *delete(Fheap *f, int key);
-Node *decrease(Fheap *f, int key, int val);
-int extract_min(Fheap *f);
-void add_root(Fheap *f, Node *node);
 void free_node(Node *n) {if (n) free(n);}
-int find_min(Fheap *f);
 
 void free_fheap() {
 
@@ -64,6 +51,22 @@ Fheap *init_fheap() {
     Fheap *f = (Fheap *) calloc(1, sizeof(Fheap));
     f->min = INT32_MAX;
     return f;
+}
+
+void add_root(Fheap *f, Node *x) {
+    // add back to root list, and prepare for it
+    x->prev = NULL;
+    x->next = NULL;
+    x->parent = NULL;
+    x->mark = 0;
+
+    if (f->root == NULL) f->root = x;
+    else {
+        // insert at the HEAD (O(1))
+        x->next = f->root;
+        f->root->prev = x;
+        f->root = x;
+    }
 }
 
 Node *unite(Node *tree1, Node* tree2) {
@@ -177,22 +180,6 @@ void insert(Fheap *f, int key) {
     add_root(f, new_node);
 }
 
-void add_root(Fheap *f, Node *x) {
-    // add back to root list, and prepare for it
-    x->prev = NULL;
-    x->next = NULL;
-    x->parent = NULL;
-    x->mark = 0;
-
-    if (f->root == NULL) f->root = x;
-    else {
-        // insert at the HEAD (O(1))
-        x->next = f->root;
-        f->root->prev = x;
-        f->root = x;
-    }
-}
-
 Node *delete(Fheap *f, int key) {
     Node *t = handler[key];
     if (!t) return NULL;
@@ -241,8 +228,6 @@ Node *decrease(Fheap *f, int key, int val) {
     handler[x->key] = x;
     if (x->key < f->min) f->min = x->key;
     
-
-
     Node *p = x->parent;
     if (p != NULL) {
         if (x->prev) x->prev->next = x->next;
@@ -268,8 +253,7 @@ int extract_min(Fheap *f) {
     return min;
 }
 
-
-int cmp_tree(const void *a, const void *b){
+int cmp_roots(const void *a, const void *b){
     // compare degree first and then key
     const Node *x = *(const Node **)a;
     const Node *y = *(const Node **)b;
@@ -283,66 +267,85 @@ int cmp_tree(const void *a, const void *b){
     return 0;
 }
 
-// Node **setup_print(Node *curr, int *size) {
-//     int s = 0;
-//     while (curr != NULL) {
-//         s++;
-//         curr = curr->next;
-//     }
+int cmp_keys(const void *a, const void *b) {
+    const Node *x = *(const Node **)a;
+    const Node *y = *(const Node **)b;
+    if (x->degree < y->degree) return -1;
+    if (x->degree > y->degree) return 1;
+    return 0;
+}
 
-//     Node **trees = (Node **) malloc(s * sizeof(Node*));
-//     int idx = 0;
-//     while (curr != NULL) {
-//         trees[idx++] = curr;
-//         curr = curr->next;
-//     }
-
-//     qsort(trees, s, sizeof(Node*), cmp_tree);
-//     *size = s;
-//     return trees;
-// }
-
-// void print_forest(Fheap *f) {
-//     // print each tree by degree then by key
-//     if (f->root == NULL) return;
-
-//     int tree_size = 0;
-//     Node **trees = setup_print(f->root, &tree_size);
-//     int top = 0;
-
-//     while (top < tree_size) {
-//         Node *root = trees[top++];
-//         print_node(root);
-        
-//         int layer_size = 0;
-
-//     }
-
-    
-//     free(trees);
-// }
-
-void test_print(Fheap *f) {
-    Node *curr = f->root;
-
+Node **collect_subtrees(Node *head, int *count) {
+    int s = 0;
+    Node *curr = head;
 
     while (curr != NULL) {
-        DEBUG("key: %d, mark: %d, degree: %d, this: %d, prev: %d, next: %d, parent: %d, child_head %d\n",
-              curr->key, curr->mark, curr->degree, curr, curr->prev, curr->next, curr->parent, curr->child_head);
-        
-        if (curr->child_head != NULL) {
-            DEBUG("\n\nfound child: \n\n");
-            Node *child = curr->child_head;
-            while (child != NULL) {
-                DEBUG("key: %d, mark: %d, degree: %d, this: %d, prev: %d, next: %d, parent: %d, child_head %d\n",
-                      child->key, child->mark, child->degree, child, child->prev, child->next, child->parent, child->child_head);
-                child = child->next;
-            }
-            DEBUG("\n\ndone: \n\n");
-        }
-
+        s++;
         curr = curr->next;
     }
+    *count = s;
+    if (s == 0) return NULL;
+
+    Node **trees = (Node **) malloc(s * sizeof(Node*));
+    curr = head;
+    int idx = 0;
+    while (curr != NULL) {
+        trees[idx++] = curr;
+        curr = curr->next;
+    }
+    
+    return trees;
+}
+
+void print_tree_bfs(Node *root) {
+    if (root == NULL) return;
+
+    Node **curr_level = (Node**)malloc(NODE_CAP * sizeof(Node*));
+    Node **next_level = (Node**)malloc(NODE_CAP * sizeof(Node*));
+    int curr_count = 0;
+
+    curr_level[0] = root;
+    curr_count = 1;
+    printf("%d", root->key);
+
+    while (curr_count > 0) {
+        int next_count = 0;
+
+        for (int i = 0; i < curr_count; i++) {
+            Node *parent = curr_level[i];
+            Node *child = parent->child_head;
+            while (child != NULL) {
+                next_level[next_count++] = child;
+                child = child->next;
+            }
+        }
+
+        if (next_count > 0) {
+            qsort(next_level, next_count, sizeof(Node*), cmp_keys);
+            for (int i = 0; i < next_count; i++) printf(" %d", next_level[i]->key);
+        }
+
+        Node **temp = curr_level;
+        curr_level = next_level; 
+        next_level = temp;
+        curr_count = next_count;
+    }
+    printf("\n");
+    free(curr_level);
+    free(next_level);
+}
+
+void print_forest(Fheap *f) {
+    // print each tree by degree then by key
+    if (f->root == NULL) return;
+
+    int root_count = 0;
+    Node **roots = collect_subtrees(f->root, &root_count);
+    qsort(roots, root_count, sizeof(Node*), cmp_roots);
+
+    for (int i = 0; i < root_count; i++) print_tree_bfs(roots[i]);
+
+    free(roots);
 }
 
 #define MAX_BUFF 12
@@ -380,7 +383,7 @@ int main(void) {
             consolidate(fheap);
         }
         else if (strcmp(cmd, "exit") == 0) {
-            test_print(fheap);
+            print_forest(fheap);
             free(cmd);
             return 0;
         }
