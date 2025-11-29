@@ -3,8 +3,8 @@
 #include <stdbool.h>
 #include <string.h>
 #include <stdint.h>
-//#define DEBUG(msg,...)
 #define DEBUG(msg,...) printf("DEBUG: " msg "\n" , ##__VA_ARGS__)
+#define DEBUG(msg,...)
 #define NODE_CAP 10001
 #define MAX_DEGREE 500
 typedef struct Node {
@@ -35,9 +35,7 @@ void insert(Fheap *, int key);
 void delete(Fheap *f, int key);
 void decrease(Fheap *f, int key, int val);
 int extract_min(Fheap *f);
-
-
-
+void insert_node(Fheap *f, Node *node);
 void free_node(Node *n) {if (n) free(n);}
 
 
@@ -136,12 +134,72 @@ void insert(Fheap *f, int key) {
     }
 }
 
+void insert_node(Fheap *f, Node *node) {
+    // O(1) doubly linked lazy 
+    
+    Node *curr = f->root;
+    if (curr == NULL) f->root = node;
+    else {
+        node->next = curr->next;
+        if (curr->next) curr->next->prev = node;
+
+        node->prev = curr;
+        curr->next = node;
+    }
+}
+
 void delete(Fheap *f, int key) {
-    DEBUG("delete %d\n", key);
+    Node *t = handler[key];
+    handler[key] = NULL;
+
+    // 4 cases with or without child/ parent
+    if (t->child_head != NULL) {
+        Node *child = t->child_head;
+
+        while (child != NULL) {
+            Node *next = child->next;
+
+            child->next = NULL;
+            child->prev = NULL;
+            child->parent = NULL;
+            insert_node(f, child);
+
+            child = next;
+        }
+    }
+
+    if (t->parent != NULL) {
+        Node *p = t->parent;
+        p->mark++;
+        p->degree--;
+
+        if (p->child_head == t) {
+            p->child_head = t->next; 
+            if (t->next) t->next->prev = NULL;
+            // need change parent here? or is done?
+        }
+        else {
+            if (t->prev) t->prev->next = t->next;
+            if (t->next) t->next->prev = t->prev;
+        }
+
+        if (p->mark == 2) {
+            p->mark = 0;
+            delete(f, p->key);
+        }
+    }
+    else { // handling root
+        if (t->prev) t->prev->next = t->next;
+        if (t->next) t->next->prev = t->prev;
+        if (f->root == t) f->root = t->next;
+    }
+
+    free_node(t);
 }
 
 void decrease(Fheap *f, int key, int val) {
-    DEBUG("decrease %d %d\n", key, val);
+    Node *target = handler[key];
+    
 }
 
 int extract_min(Fheap *f) {
@@ -151,12 +209,79 @@ int extract_min(Fheap *f) {
     return min;
 }
 
+
+int cmp_tree(const void *a, const void *b){
+    // compare degree first and then key
+    const Node *x = *(const Node **)a;
+    const Node *y = *(const Node **)b;
+
+    if (x->degree < y->degree) return -1;
+    if (x->degree > y->degree) return 1;
+
+    if (x->key < y->key) return -1;
+    if (x->key > y->key) return 1;
+
+    return 0;
+}
+
+// Node **setup_print(Node *curr, int *size) {
+//     int s = 0;
+//     while (curr != NULL) {
+//         s++;
+//         curr = curr->next;
+//     }
+
+//     Node **trees = (Node **) malloc(s * sizeof(Node*));
+//     int idx = 0;
+//     while (curr != NULL) {
+//         trees[idx++] = curr;
+//         curr = curr->next;
+//     }
+
+//     qsort(trees, s, sizeof(Node*), cmp_tree);
+//     *size = s;
+//     return trees;
+// }
+
+// void print_forest(Fheap *f) {
+//     // print each tree by degree then by key
+//     if (f->root == NULL) return;
+
+//     int tree_size = 0;
+//     Node **trees = setup_print(f->root, &tree_size);
+//     int top = 0;
+
+//     while (top < tree_size) {
+//         Node *root = trees[top++];
+//         print_node(root);
+        
+//         int layer_size = 0;
+
+//     }
+
+    
+//     free(trees);
+// }
+
 void test_print(Fheap *f) {
     Node *curr = f->root;
 
+
     while (curr != NULL) {
         DEBUG("key: %d, mark: %d, degree: %d, this: %d, prev: %d, next: %d, parent: %d, child_head %d\n",
-                curr->key, curr->mark, curr->degree, curr, curr->prev, curr->next, curr->parent, curr->child_head);
+              curr->key, curr->mark, curr->degree, curr, curr->prev, curr->next, curr->parent, curr->child_head);
+        
+        if (curr->child_head != NULL) {
+            DEBUG("\n\nfound child: \n\n");
+            Node *child = curr->child_head;
+            while (child != NULL) {
+                DEBUG("key: %d, mark: %d, degree: %d, this: %d, prev: %d, next: %d, parent: %d, child_head %d\n",
+                      child->key, child->mark, child->degree, child, child->prev, child->next, child->parent, child->child_head);
+                child = child->next;
+            }
+            DEBUG("\n\ndone: \n\n");
+        }
+
         curr = curr->next;
     }
 }
