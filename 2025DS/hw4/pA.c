@@ -58,10 +58,17 @@ void add_root(Fheap *f, Node *x) {
 
     if (f->root == NULL) f->root = x;
     else {
-        // insert at the HEAD (O(1))
-        x->next = f->root;
-        f->root->prev = x;
-        f->root = x;
+        // //insert at the HEAD (O(1))
+        // x->next = f->root;
+        // f->root->prev = x;
+        // f->root = x;
+        // Find the TAIL and append
+        Node *curr = f->root;
+        while (curr->next != NULL) {
+            curr = curr->next;
+        }
+        curr->next = x;
+        x->prev = curr;
     }
 }
 
@@ -85,9 +92,15 @@ Node *unite(Node *tree1, Node* tree2) {
     if (head == NULL) 
         tree1->child_head = tree2;
     else {
-        tree2->next = head;
-        head->prev = tree2;
-        tree1->child_head = tree2; // always insert front of child head
+        // tree2->next = head;
+        // head->prev = tree2;
+        // tree1->child_head = tree2; // always insert front of child head
+        Node *curr = head;
+        while (curr->next != NULL) {
+            curr = curr->next;
+        }
+        curr->next = tree2;
+        tree2->prev = curr;
     }
     
     tree2->parent = tree1;
@@ -225,7 +238,7 @@ Node *decrease(Fheap *f, int key, int val) {
     if (x->key < f->min) f->min = x->key;
     
     Node *p = x->parent;
-    if (p != NULL) {
+    if (p != NULL && x->key < p->key) {
         if (x->prev) x->prev->next = x->next;
         if (x->next) x->next->prev = x->prev;
 
