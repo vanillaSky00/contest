@@ -26,10 +26,6 @@ Node *handler[NODE_CAP];
 
 void free_node(Node *n) {if (n) free(n);}
 
-void free_fheap() {
-
-}
-
 int find_min(Fheap *f) {
     Node *curr = f->root;
     int min = INT32_MAX;
@@ -241,9 +237,10 @@ Node *decrease(Fheap *f, int key, int val) {
         }
         
         add_root(f, x);
+        return p;
     }
 
-    return p;
+    return NULL;
 }
 
 int extract_min(Fheap *f) {
@@ -363,7 +360,6 @@ int main(void) {
         if (strcmp(cmd, "insert") == 0) {
             scanf("%d", &key);
             insert(fheap, key);
-            consolidate(fheap);
         } 
         else if (strcmp(cmd, "delete") == 0) {
             scanf("%d", &key);
