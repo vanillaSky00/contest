@@ -35,7 +35,7 @@ void insert(Fheap *, int key);
 Node *delete(Fheap *f, int key);
 Node *decrease(Fheap *f, int key, int val);
 int extract_min(Fheap *f);
-void insert_node(Fheap *f, Node *node);
+void add_root(Fheap *f, Node *node);
 void free_node(Node *n) {if (n) free(n);}
 int find_min(Fheap *f);
 
@@ -62,6 +62,7 @@ Node *create_node(int key) {
 
 Fheap *init_fheap() {
     Fheap *f = (Fheap *) calloc(1, sizeof(Fheap));
+    f->min = INT32_MAX;
     return f;
 }
 
@@ -96,9 +97,9 @@ Node *unite(Node *tree1, Node* tree2) {
 
 void consolidate(Fheap *f) {
     Node *degrees[MAX_DEGREE] = {NULL};
-
     Node *curr = f->root;
-    
+    int max_d = 0;
+
     while (curr != NULL) {
         Node *next = curr->next;
 
@@ -108,6 +109,7 @@ void consolidate(Fheap *f) {
         while (d < MAX_DEGREE) {
             if (degrees[d] == NULL) {
                 degrees[d] = united_node;
+                if (max_d < d) max_d = d;
                 break;
             }
             else {
@@ -121,6 +123,18 @@ void consolidate(Fheap *f) {
 
         curr = next;
         DEBUG("consolidate: outter while");
+    }
+
+    // rebuild f heap from the degrees
+    f->min = INT32_MAX;
+    f->root = NULL;
+    
+    for (int i = 0; i <= max_d; i++) {
+        if (degrees[i] != NULL) {
+            add_root(f, degrees[i]);
+
+            if (degrees[i]->key < f->min) f->min = degrees[i]->key;
+        }
     }
 }
 
@@ -145,13 +159,8 @@ void cascading_cut(Fheap *f, Node *x) {
             if (x->next) x->next->prev = NULL;
             // need change parent here? or is done?
         }
-        
-        // prepare for root list
-        x->prev = NULL;
-        x->next = NULL;
-        x->parent = NULL;
-        x->mark = 0;
-        insert_node(f, x);
+
+        add_root(f, x);
 
         cascading_cut(f, p);
     }
@@ -162,30 +171,25 @@ void insert(Fheap *f, int key) {
     Node *new_node = create_node(key);
     handler[new_node->key] = new_node;
     
-    if (new_node->key < f->min) f->min = new_node->key;
-
-    Node *curr = f->root;
-    if (curr == NULL) f->root = new_node;
-    else {
-        new_node->next = curr->next;
-        if (curr->next) curr->next->prev = new_node;
-
-        new_node->prev = curr;
-        curr->next = new_node;
-    }
+    if (f->root == NULL || key < f->min) 
+        f->min = new_node->key;
+    
+    add_root(f, new_node);
 }
 
-void insert_node(Fheap *f, Node *node) {
-    // O(1) doubly linked lazy 
-    
-    Node *curr = f->root;
-    if (curr == NULL) f->root = node;
-    else {
-        node->next = curr->next;
-        if (curr->next) curr->next->prev = node;
+void add_root(Fheap *f, Node *x) {
+    // add back to root list, and prepare for it
+    x->prev = NULL;
+    x->next = NULL;
+    x->parent = NULL;
+    x->mark = 0;
 
-        node->prev = curr;
-        curr->next = node;
+    if (f->root == NULL) f->root = x;
+    else {
+        // insert at the HEAD (O(1))
+        x->next = f->root;
+        f->root->prev = x;
+        f->root = x;
     }
 }
 
@@ -201,11 +205,7 @@ Node *delete(Fheap *f, int key) {
         while (child != NULL) {
             Node *next = child->next;
 
-            child->next = NULL;
-            child->prev = NULL;
-            child->parent = NULL;
-            child->mark = 0;
-            insert_node(f, child);
+            add_root(f, child);
 
             child = next;
         }
@@ -234,6 +234,11 @@ Node *delete(Fheap *f, int key) {
 
 Node *decrease(Fheap *f, int key, int val) {
     Node *target = handler[key];
+    target->key = val;
+    handler[key] = NULL;
+    handler[val] = target;
+
+
     
 }
 
