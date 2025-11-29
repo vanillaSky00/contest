@@ -3,10 +3,12 @@
 #include <stdbool.h>
 #include <string.h>
 #include <stdint.h>
-//#define DEBUG(msg,...) printf("DEBUG: " msg "\n" , ##__VA_ARGS__)
-#define DEBUG(msg,...)
+
 #define NODE_CAP 10001
 #define MAX_DEGREE 500
+//#define DEBUG(msg,...) printf("DEBUG: " msg "\n" , ##__VA_ARGS__)
+#define DEBUG(msg,...)
+
 typedef struct Node {
     int key;
     int mark; 
@@ -25,6 +27,14 @@ typedef struct Fheap {
 Node *handler[NODE_CAP];
 
 void free_node(Node *n) {if (n) free(n);}
+
+int cmp_keys(const void *a, const void *b) {
+    const Node *x = *(const Node **)a;
+    const Node *y = *(const Node **)b;
+    if (x->key < y->key) return -1;
+    if (x->key > y->key) return 1;
+    return 0;
+}
 
 int find_min(Fheap *f) {
     Node *curr = f->root;
@@ -50,7 +60,7 @@ Fheap *init_fheap() {
 }
 
 void add_root(Fheap *f, Node *x) {
-    // add back to root list, and prepare for it
+    // Add back to root list, and prepare for it
     x->prev = NULL;
     x->next = NULL;
     x->parent = NULL;
@@ -58,10 +68,6 @@ void add_root(Fheap *f, Node *x) {
 
     if (f->root == NULL) f->root = x;
     else {
-        // //insert at the HEAD (O(1))
-        // x->next = f->root;
-        // f->root->prev = x;
-        // f->root = x;
         // Find the TAIL and append
         Node *curr = f->root;
         while (curr->next != NULL) {
@@ -83,19 +89,18 @@ Node *unite(Node *tree1, Node* tree2) {
         tree2 = tmp;
     }
 
-    // this cause loop
+    // Unlink tree2 from neighbor (root list)
     if (tree2->prev) tree2->prev->next = tree2->next;
     if (tree2->next) tree2->next->prev = tree2->prev;
-    tree2->prev = tree2->next = NULL;
+    tree2->prev = NULL;
+    tree2->next = NULL;
 
-    Node *head = tree1->child_head;
-    if (head == NULL) 
+    // Append to TAIL of tree1's child list
+    if (tree1->child_head == NULL) {
         tree1->child_head = tree2;
+    } 
     else {
-        // tree2->next = head;
-        // head->prev = tree2;
-        // tree1->child_head = tree2; // always insert front of child head
-        Node *curr = head;
+        Node *curr = tree1->child_head;
         while (curr->next != NULL) {
             curr = curr->next;
         }
@@ -104,62 +109,83 @@ Node *unite(Node *tree1, Node* tree2) {
     }
     
     tree2->parent = tree1;
+    tree1->degree++;
     return tree1;
 }
 
+// REWRITTEN CONSOLIDATE: Matches Reference "Sort & Restart" Logic
 void consolidate(Fheap *f) {
-    Node *degrees[MAX_DEGREE] = {NULL};
-    Node *curr = f->root;
-    int max_d = 0;
+    bool merged = true;
+    
+    // We stay in this loop as long as ANY merge happened in the previous pass
+    while (merged) {
+        merged = false; 
+        
+        int count = 0;
+        Node *curr = f->root;
+        while (curr) { count++; curr = curr->next; }
+        
+        if (count < 2) break;
 
-    while (curr != NULL) {
-        Node *next = curr->next;
-
-        Node *united_node = curr;
-        int d = united_node->degree;
-
-        while (d < MAX_DEGREE) {
-            if (degrees[d] == NULL) {
-                degrees[d] = united_node;
-                if (max_d < d) max_d = d;
-                break;
-            }
-            else {
-                united_node = unite(degrees[d], united_node);
-                united_node->degree++;
-                degrees[d] = NULL;
-                d = united_node->degree;
-            }
-            DEBUG("consolidate: inner while");
+        Node **roots = malloc(count * sizeof(Node*));
+        curr = f->root;
+        for (int i = 0; i < count; i++) {
+            roots[i] = curr;
+            curr = curr->next;
         }
 
-        curr = next;
-        DEBUG("consolidate: outter while");
+        // Sort by KEY (Required by Reference)
+        qsort(roots, count, sizeof(Node*), cmp_keys);
+
+        // Re-link list based on sort order
+        f->root = roots[0];
+        roots[0]->prev = NULL;
+        for(int i = 0; i < count - 1; i++) {
+            roots[i]->next = roots[i+1];
+            roots[i+1]->prev = roots[i];
+        }
+        roots[count-1]->next = NULL;
+
+        Node *degrees[MAX_DEGREE] = {NULL};
+        
+        for (int i = 0; i < count; i++) {
+            Node *x = roots[i];
+            int d = x->degree;
+            
+            if (degrees[d] == NULL) {
+                degrees[d] = x;
+            } 
+            else {
+                // Collision found! Merge and Restart.
+                Node *y = degrees[d];
+                // Unite handles (Smaller -> Parent) logic
+                if (x->key < y->key) unite(x, y); 
+                else unite(y, x);
+                
+                merged = true; 
+                break; // Break for-loop to restart
+            }
+        }
+        free(roots);
     }
 
-    // rebuild f heap from the degrees
+    // Update Global Min
     f->min = INT32_MAX;
-    f->root = NULL;
-
-    for (int i = 0; i <= max_d; i++) {
-        if (degrees[i] != NULL) {
-            add_root(f, degrees[i]);
-
-            if (degrees[i]->key < f->min) f->min = degrees[i]->key;
-        }
+    Node *curr = f->root;
+    while(curr) {
+        if(curr->key < f->min) f->min = curr->key;
+        curr = curr->next;
     }
 }
 
 void cascading_cut(Fheap *f, Node *x) {
     if (f == NULL || x == NULL) return;
-    // Stop if x is a root, and root does not mark
-    if (x->parent == NULL) return;
+    if (x->parent == NULL) return; // Stop if x is a root
 
     if (x->mark == 0) {
         x->mark = 1;
     }
     else { 
-
         if (x->prev) x->prev->next = x->next;
         if (x->next) x->next->prev = x->prev;
 
@@ -169,17 +195,14 @@ void cascading_cut(Fheap *f, Node *x) {
         if (p->child_head == x) {
             p->child_head = x->next; 
             if (x->next) x->next->prev = NULL;
-            // need change parent here? or is done?
         }
 
         add_root(f, x);
-
         cascading_cut(f, p);
     }
 }
 
 void insert(Fheap *f, int key) {
-    // O(1) doubly linked lazy 
     Node *new_node = create_node(key);
     handler[new_node->key] = new_node;
     
@@ -189,48 +212,47 @@ void insert(Fheap *f, int key) {
     add_root(f, new_node);
 }
 
-Node *delete(Fheap *f, int key) {
+void delete(Fheap *f, int key) {
     Node *t = handler[key];
-    if (!t) return NULL;
+    if (!t) return;
     handler[key] = NULL;
 
-    // 4 cases with or without child/ parent
+    // Acutally 4 cases with or without child/ parent
+    // Promote children
     if (t->child_head != NULL) {
         Node *child = t->child_head;
-
         while (child != NULL) {
             Node *next = child->next;
-
-            add_root(f, child);
-
+            add_root(f, child); // Already internall unlink
             child = next;
         }
     }
 
-    // handling parent, itself, neighbor
+    // Unlink from neighbor and parent
     if (t->prev) t->prev->next = t->next;
     if (t->next) t->next->prev = t->prev;
-    if (f->root == t) f->root = t->next; // handling root
+    if (f->root == t) f->root = t->next;
 
     Node *p = t->parent;
     if (p != NULL) {
         p->degree--;
-
         if (p->child_head == t) {
             p->child_head = t->next; 
             if (t->next) t->next->prev = NULL;
-            // need change parent here? or is done?
         }
+
+        // Mark parent even if root, but avoiding cut the root
+        if (p->mark == 0) p->mark = 1; 
+        else cascading_cut(f, p);
     }
 
     if (t->key == f->min) f->min = find_min(f);
     free_node(t);
-    return p;
 }
 
-Node *decrease(Fheap *f, int key, int val) {
+void decrease(Fheap *f, int key, int val) {
     Node *x = handler[key];
-    if (!x) return NULL; 
+    if (!x) return; 
 
     x->key -= val;
     handler[key] = NULL;
@@ -243,43 +265,31 @@ Node *decrease(Fheap *f, int key, int val) {
         if (x->next) x->next->prev = x->prev;
 
         p->degree--;
-
         if (p->child_head == x) {
             p->child_head = x->next; 
             if (x->next) x->next->prev = NULL;
         }
         
         add_root(f, x);
-        return p;
+        
+        if (p->mark == 0) p->mark = 1; 
+        else cascading_cut(f, p);   
     }
-
-    return NULL;
 }
 
 int extract_min(Fheap *f) {
     int min = f->min;
-    delete(f, min); // already update min
+    delete(f, min); 
     DEBUG("extract-min\n");
     return min;
 }
 
 int cmp_roots(const void *a, const void *b){
-    // compare degree first and then key
     const Node *x = *(const Node **)a;
     const Node *y = *(const Node **)b;
 
     if (x->degree < y->degree) return -1;
     if (x->degree > y->degree) return 1;
-
-    if (x->key < y->key) return -1;
-    if (x->key > y->key) return 1;
-
-    return 0;
-}
-
-int cmp_keys(const void *a, const void *b) {
-    const Node *x = *(const Node **)a;
-    const Node *y = *(const Node **)b;
     if (x->key < y->key) return -1;
     if (x->key > y->key) return 1;
     return 0;
@@ -303,7 +313,7 @@ Node **collect_subtrees(Node *head, int *count) {
         trees[idx++] = curr;
         curr = curr->next;
     }
-    
+
     return trees;
 }
 
@@ -348,7 +358,7 @@ void print_tree_bfs(Node *root) {
 void print_forest(Fheap *f) {
     // print each tree by degree then by key
     if (f->root == NULL) return;
-
+    
     int root_count = 0;
     Node **roots = collect_subtrees(f->root, &root_count);
     qsort(roots, root_count, sizeof(Node*), cmp_roots);
@@ -360,15 +370,13 @@ void print_forest(Fheap *f) {
 
 #define MAX_BUFF 12
 int main(void) {
-
     char *cmd = malloc(MAX_BUFF);
     int key;
     int val;
     Fheap* fheap = init_fheap();
 
     while (true) {
-        if (scanf("%11s", cmd) != 1)   // safe input
-            break;
+        if (scanf("%11s", cmd) != 1) break;  // Safe input
 
         if (strcmp(cmd, "insert") == 0) {
             scanf("%d", &key);
@@ -376,19 +384,16 @@ int main(void) {
         } 
         else if (strcmp(cmd, "delete") == 0) {
             scanf("%d", &key);
-            Node *p = delete(fheap, key);
-            cascading_cut(fheap, p);
+            delete(fheap, key); 
             consolidate(fheap);
         }
         else if (strcmp(cmd, "decrease") == 0) {
             scanf("%d", &key);
             scanf("%d", &val);
-            Node *p = decrease(fheap, key, val);
-            cascading_cut(fheap, p);
+            decrease(fheap, key, val); 
         }
         else if (strcmp(cmd, "extract-min") == 0) {
             extract_min(fheap);
-            //cascading_cut(fheap, p); // must root no parent
             consolidate(fheap);
         }
         else if (strcmp(cmd, "exit") == 0) {
