@@ -128,7 +128,7 @@ void consolidate(Fheap *f) {
     // rebuild f heap from the degrees
     f->min = INT32_MAX;
     f->root = NULL;
-    
+
     for (int i = 0; i <= max_d; i++) {
         if (degrees[i] != NULL) {
             add_root(f, degrees[i]);
@@ -233,13 +233,32 @@ Node *delete(Fheap *f, int key) {
 }
 
 Node *decrease(Fheap *f, int key, int val) {
-    Node *target = handler[key];
-    target->key = val;
+    Node *x = handler[key];
+    if (!x) return NULL; 
+
+    x->key -= val;
     handler[key] = NULL;
-    handler[val] = target;
-
-
+    handler[x->key] = x;
+    if (x->key < f->min) f->min = x->key;
     
+
+
+    Node *p = x->parent;
+    if (p != NULL) {
+        if (x->prev) x->prev->next = x->next;
+        if (x->next) x->next->prev = x->prev;
+
+        p->degree--;
+
+        if (p->child_head == x) {
+            p->child_head = x->next; 
+            if (x->next) x->next->prev = NULL;
+        }
+        
+        add_root(f, x);
+    }
+
+    return p;
 }
 
 int extract_min(Fheap *f) {
