@@ -4,7 +4,7 @@
 #include <string.h>
 #include <stdint.h>
 #define DEBUG(msg,...) printf("DEBUG: " msg "\n" , ##__VA_ARGS__)
-#define DEBUG(msg,...)
+//#define DEBUG(msg,...)
 #define NODE_CAP 10001
 #define MAX_DEGREE 500
 typedef struct Node {
@@ -30,7 +30,7 @@ Node *create_node(int key);
 Fheap *init_fheap();
 Node *unite(Node *tree1, Node* tree2);
 void consolidate(Fheap *f);
-void cuscading_cut();
+void cascading_cut(Node *n);
 void insert(Fheap *, int key);
 void delete(Fheap *f, int key);
 void decrease(Fheap *f, int key, int val);
@@ -114,7 +114,7 @@ void consolidate(Fheap *f) {
     }
 }
 
-void cuscading_cut() {
+void cascading_cut(Node *n) {
 
 }
 
@@ -150,6 +150,7 @@ void insert_node(Fheap *f, Node *node) {
 
 void delete(Fheap *f, int key) {
     Node *t = handler[key];
+    if (!t) return;
     handler[key] = NULL;
 
     // 4 cases with or without child/ parent
@@ -168,6 +169,11 @@ void delete(Fheap *f, int key) {
         }
     }
 
+    // handling parent, itself, neighbor
+    if (t->prev) t->prev->next = t->next;
+    if (t->next) t->next->prev = t->prev;
+    if (f->root == t) f->root = t->next; // handling root
+
     if (t->parent != NULL) {
         Node *p = t->parent;
         p->mark++;
@@ -178,20 +184,11 @@ void delete(Fheap *f, int key) {
             if (t->next) t->next->prev = NULL;
             // need change parent here? or is done?
         }
-        else {
-            if (t->prev) t->prev->next = t->next;
-            if (t->next) t->next->prev = t->prev;
-        }
 
         if (p->mark == 2) {
             p->mark = 0;
-            delete(f, p->key);
+            delete(f, p);
         }
-    }
-    else { // handling root
-        if (t->prev) t->prev->next = t->next;
-        if (t->next) t->next->prev = t->prev;
-        if (f->root == t) f->root = t->next;
     }
 
     free_node(t);
