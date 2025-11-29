@@ -117,7 +117,9 @@ void add_tail(Node *parent, Node *child) {
 ## Reference:
 CLRS 
 
+[Youtube -- Fibonacci Heaps or "How to invent an extremely clever data structure"](https://www.youtube.com/watch?v=6JxvKfSV9Ns&t=1278s)
+
 Another Code style: 
-[To typedef structs or not](https://www.reddit.com/r/C_Programming/comments/kr4i80/to_typedef_structs_or_not/)
+[Reddit -- To typedef structs or not](https://www.reddit.com/r/C_Programming/comments/kr4i80/to_typedef_structs_or_not/)
 
 It's an opinion. Follow your coding standard. The Linux kernel says no while OpenSSL says yes (Chapter 5)
