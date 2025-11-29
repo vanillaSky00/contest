@@ -86,7 +86,7 @@ Node *unite(Node *tree1, Node* tree2) {
 }
 
 void consolidate(Fheap *f) {
-    Node *curr = f->root->next;
+    Node *curr = f->root;
     
     while (curr != NULL) {
         Node *next = curr->next;
