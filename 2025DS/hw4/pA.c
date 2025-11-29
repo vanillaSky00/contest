@@ -3,7 +3,8 @@
 #include <stdbool.h>
 #include <string.h>
 #include <stdint.h>
-
+//#define DEBUG(msg,...)
+#define DEBUG(msg,...) printf("DEBUG: " msg "\n" , ##__VA_ARGS__)
 #define NODE_CAP 10001
 #define MAX_DEGREE 500
 typedef struct Node {
@@ -57,7 +58,7 @@ Fheap *init_fheap() {
 }
 
 Node *unite(Node *tree1, Node* tree2) {
-    printf("unite DEBUG\n");
+    DEBUG("unite");
     if (tree1 == NULL) return tree2;
     if (tree2 == NULL) return tree1;
 
@@ -107,11 +108,11 @@ void consolidate(Fheap *f) {
                 degrees[d] = NULL;
                 d = united_node->degree;
             }
-            printf("inner while DEBUG\n");
+            DEBUG("consolidate: inner while");
         }
 
         curr = next;
-        printf("outer while DEBUG\n");
+        DEBUG("consolidate: outter while");
     }
 }
 
@@ -136,17 +137,17 @@ void insert(Fheap *f, int key) {
 }
 
 void delete(Fheap *f, int key) {
-    printf("delete %d\n", key);
+    DEBUG("delete %d\n", key);
 }
 
 void decrease(Fheap *f, int key, int val) {
-    printf("decrease %d %d\n", key, val);
+    DEBUG("decrease %d %d\n", key, val);
 }
 
 int extract_min(Fheap *f) {
     int min = f->min;
     delete(f, min);
-    //printf("extract-min\n");
+    DEBUG("extract-min\n");
     return min;
 }
 
@@ -154,7 +155,7 @@ void test_print(Fheap *f) {
     Node *curr = f->root;
 
     while (curr != NULL) {
-        printf("key: %d, mark: %d, degree: %d, this: %d, prev: %d, next: %d, parent: %d, child_head %d\n",
+        DEBUG("key: %d, mark: %d, degree: %d, this: %d, prev: %d, next: %d, parent: %d, child_head %d\n",
                 curr->key, curr->mark, curr->degree, curr, curr->prev, curr->next, curr->parent, curr->child_head);
         curr = curr->next;
     }
