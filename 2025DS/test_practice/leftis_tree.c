@@ -21,7 +21,7 @@ Node *meld(Node *x, Node *y) {
 
     if (x->key > y->key) swap(&x, &y);
 
-    x->right = meld(x->right, y);
+    x->right = meld(x->right, y); // so right will never null 
 
     if (!x->left) {
         x->left = x->right;
