@@ -14,23 +14,22 @@ int main() {
 
     int* ans = nearestSmallerElement(t, arr);
 
+    int isEmpty = 1;
     for (int i = 0; i < t; i++) {
+        if (ans[i] != -1) isEmpty = 0;
         printf("%d ", ans[i]);
     }
 
     printf("\n");
 
-    int negative = 0;
-    for (int i = 0; i < t; i++) {
-        if (ans[i] == -1) {
-            negative++;
-        }
-        else {
-            printf("%d ", ans[i]);
+    if (isEmpty) printf("EMPTY");
+    else {
+        for (int i = 0; i < t; i++) {
+            if (ans[i] != -1) printf("%d ", ans[i]);
         }
     }
-    if (negative == t) printf("EMPTY"); 
 
+    free(ans);
     return 0;
 }
 
